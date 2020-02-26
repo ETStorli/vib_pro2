@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.linalg as la
 import scipy as sp
-from numba import jit, njit, vectorize
+
 
 h = 0.1
 
@@ -31,32 +31,66 @@ def big_z(eta, mat_y, omega, my, d):        #funk er ikke ferdig, noe mer må gj
     return big_z
 
 def big_j(big_z, c):
-    big_j = 0.5*la.norm(np.add(big_z,-1*c))**2
+    big_j = 0.5*la.norm(np.add(big_z, -1*c))**2
     return big_j
 
 
 
-@njit
-def adam_descent_alg():
-    n = np.arange(10) #Vet ikke hva denne skal være enda
-    beta_1, beta_2 = .9, .999
-    alpha = .001
-    epsilon = 1e-8
-    v = np.empty_like(n)
-    v_hat = np.empty_like(n)
-    m = np.empty_like(n)
-    m_hat = np.empty_like(n)
-    g = np.empty_like(n)
-    
-    for j in range(1, n):
-        pass
-        #g[j] = np.gradient(big_j*U^{j})
-        m[j] = beta_1*m[j-1] + (1-beta_1)*g[j]
-        v[j] = beta_2*v[j-1] + (1-beta_2)*(g[j]*g[j]) 
-        v_hat = v[j]/(1 - np.power(beta_2, j))
-        #U^{j+1} = U^j - alpha* (m_hat[j]/(np.sqrt(v_hat[j]) + epsilon))
-#Se også Stochastic gradient descent
+def mat_y_k1(y_0, wk, bk, sigma):
+    y_k_p1 = y_0 + h*sigma()*(wk*y_0+bk)
+    #Lagre matrise
+    return y_k_p1
 
-#2.4) Gradient til big_j(U)
-#∂J/∂W_k, ∂J/∂b_k, ∂J/∂w, ∂J/∂mu
+
+
+
+
+
+
+
+
+
+####### UNder er puedo for main i lærings algoritmen
+"""
+def laer_tall(list_y0, K, tau, iterasjon lengde):
+    generer mat_y0
+    generer tilfeldig Wk, b_k, omega, my 
+    
+    while iterasjon mindre enn ønsket antall
+        lag Y_k pluss 1 ved å summere mat_y0 og vekt, basis kritere
+        
+        lagre Y_k til neste iterasjon
+        
+        Beregn P_k fra likning 7 i hefte
+        
+        beregn "bitene av gradienten tilhørende projeksjon" i likn 5,6
+    
+
+
+"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
