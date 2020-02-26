@@ -8,19 +8,34 @@ h = 0.1
 
 #rho = np.tanh(x)
 
-#Y_(k+1) = Y_k = h*rho*(w_k*Y_k + b_k)
+#Y_(k+1) = Y_k = h*sigma*(w_k*Y_k + b_k)
 
 def eta(x):
     eta = 1/2 * (1 + np.tanh(x/2))
     return eta
 
 
+def sigma(x):
+    sigma = np.tanh(x)
+    return sigma
 
 #kostfunksjon som måler hvor langt modellen er unna å klassifisere perfekt
 #For I bilder
 #//
 # big_j = 1/2 * np.sum(np.abs(Z-c)**2) == 1/2 la.norm(Z-c)**2
 # big_j(U) s.4 pdf
+
+
+def big_z(eta, mat_y, omega, my, d):        #funk er ikke ferdig, noe mer må gjøres med mat_y
+    big_z = eta*(mat_y.transpose()*omega + my*np.eye(d, 0))    #numpy.eye(a, b) lager en axa matrise hvor subdiagonal/diag b er 1 og resten 0. Nå er diagonalen 1.
+    return big_z
+
+def big_j(big_z, c):
+    big_j = 0.5*la.norm(np.add(big_z,-1*c))**2
+    return big_j
+
+
+
 @njit
 def adam_descent_alg():
     n = np.arange(10) #Vet ikke hva denne skal være enda
