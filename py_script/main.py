@@ -23,7 +23,7 @@ def sigma(x):
 
 
 def big_z(eta, mat_y, omega, my, d):        #funk er ikke ferdig, noe mer må gjøres med mat_y
-    big_z = eta(x)*(mat_y.transpose()*omega + my*np.eye(d, 0))    #numpy.eye(a, b) lager en axa matrise hvor subdiagonal/diag b er 1 og resten 0. Nå er diagonalen 1.
+    big_z = eta(x)*(mat_y.transpose()*omega + my*np.eye(d, k=0))    #numpy.eye(a, b) lager en axa matrise hvor k = b bestemmer subdiag/diag som blir 1 og resten 0. Nå er diagonalen 1.
     return big_z
 
 
