@@ -5,10 +5,20 @@ import scipy as sp
 from numba import jit, njit, vectorize
 
 h = 0.1
+d = 2
+I = 10
+k = np.array(I)
+W_k = np.zeros(d*d).reshape([d,d])
 
 #rho = np.tanh(x)
 
 #Y_(k+1) = Y_k = h*rho*(w_k*Y_k + b_k)
+Y_0 = np.zeros(d*I).reshape(d,I)
+
+def Y_k(d, I):
+    pass
+    
+
 
 def eta(x):
     eta = 1/2 * (1 + np.tanh(x/2))
@@ -34,7 +44,6 @@ def adam_descent_alg():
     g = np.empty_like(n)
     
     for j in range(1, n):
-        pass
         #g[j] = np.gradient(big_j*U^{j})
         m[j] = beta_1*m[j-1] + (1-beta_1)*g[j]
         v[j] = beta_2*v[j-1] + (1-beta_2)*(g[j]*g[j]) 

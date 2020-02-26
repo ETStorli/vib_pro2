@@ -1,6 +1,7 @@
 venv/
 .DS_Store
 *.pdf
-provided/
+*.ipynb
 .vscode
 .pytest_cache/
+testgit.py
