@@ -2,43 +2,60 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.linalg as la
 import scipy as sp
+import random as rn
 from numba import jit, njit, vectorize
+from spirals import get_data_spiral_2d
 
+print(get_data_spiral_2d(n_samples=200))
+##############################################################################
+                #Variabler som blir brukt gjennom prosjektet
+
+d = 5
 h = 0.1
-#Må definere x
-#sigma = np.tanh(x)
+#data =  #startsdataen vi har fått oppgitt
 
 
-def Yk1(Y_0):
-    Y_matrix = Y_0*np.diag(np.ones(len(Y_0)))
-    return Y_matrix
-    #for k in range(len(Y_0)):
-    #    Y_matrix += h*sigma*(W[k]*Y_matrix+b[k])
-
-print(Yk1([1,2,3,4,5,6,7,8,9]))
-
-
-'''
-def Y_k1(array,i):      #Tar inn en tom array, og en teller i
-    w_k = 1                 #må bestemme variabel
-    b_k = 1                 #må bestemme variabel
-    array[i+1]=array[i]+h*rho*(w_k*array[i] + b_k)
-    i+=1
-    try:
-        if array[i+2]==0:           #trenger en try statement
-            return Y_k1(array,i)
-    except IndexError:
-        return array
-d=10
-matrise = np.arange(d*d).reshape([d,d])
-'''
-#Y_(k+1) = Y_k = h*rho*(w_k*Y_k + b_k)
+##############################################################################
+                    #Def av variabler for Y_0 og Y_k1
 
 def eta(x):
     eta = 1/2 * (1 + np.tanh(x/2))
     return eta
 
+def sigma(x):
+    sigma = np.tanh(x)
+    return sigma
 
+def big_z(eta, mat_y, omega, my, d):        #funk er ikke ferdig, noe mer må gjøres med mat_y
+    big_z = eta(x)*(mat_y.transpose()*omega + my*np.eye(d, k=0))    #numpy.eye(a, b) lager en axa matrise hvor subdiagonal/diag b er 1 og resten 0. Nå er diagonalen 1.
+    return big_z
+
+def big_j(big_z, c):            #Fungerer for numpy arrays
+    c = -1*c
+    big_j = 0.5*la.norm(np.add(big_z, c))**2
+    return big_j
+
+
+
+##############################################################################
+                        #Def av Y_0 og Y_k1
+
+def Make_Y_0(Y_0):
+    pass
+
+
+def Make_Yk(Y_matrix,sigma,h,Wk,bk):
+    return Y_matrix+h*sigma*(Wk*Y_matrix+bk)
+
+
+#############################################################################
+                        #Gradientberegninger
+
+
+
+
+##############################################################################
+                        #Adam decent algoritmen
 
 #kostfunksjon som måler hvor langt modellen er unna å klassifisere perfekt
 #For I bilder
@@ -57,6 +74,7 @@ def adam_descent_alg():
     m_hat = np.empty_like(n)
     g = np.empty_like(n)
 
+
     for j in range(1, n):
         #g[j] = np.gradient(big_j*U^{j})
         m[j] = beta_1*m[j-1] + (1-beta_1)*g[j]
@@ -67,3 +85,11 @@ def adam_descent_alg():
 
 #2.4) Gradient til big_j(U)
 #∂J/∂W_k, ∂J/∂b_k, ∂J/∂w, ∂J/∂mu
+
+##############################################################################
+                    #Selve programmet som kjenner igjen bildene
+
+Wk = np.eye(d,k=0)*rn.random()          #Def av d er øverst i programmet, linje 11
+bk = np.ones(d)*rn.random()
+omega = rn.random()
+mu = rn.random()
