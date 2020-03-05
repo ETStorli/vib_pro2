@@ -56,7 +56,29 @@ Y_out = YK(Y0)
 #############################################################################
 #Gradientberegninger
 
+# Wk er tredimensjonell, bk er todimensjonell, Y er array med alle Y-matrisene
+# Disse brukes for å regne ut gradienten for utregning av parametrene som brukes i neste lag
+def gradient(Wk, bk, w, mu, Y):
+    J_mu = d_eta(np.transpose(np.transpose(Y_out[-1])@w + mu*one)) * (Z(Y_out[-1]) - C)
+    J_w = Y_out[-1]*((Z(Y_out[-1]) - C)*d_eta(np.transpose(Y_out[-1])@w + mu))
 
+    PK = np.array([np.outer(w, np.transpose((Z(Y_out[-1]) - C) * d_eta(np.transpose(Y_out[-1]) @ w + mu*one)))])
+
+    for k in range(K-1, 0, -1):   #P0 brukes ikke så trenger ikke å regne den ut
+        #Siden Pk regnes ut baklengs, stackes de baklengs inn i PK slik at alle Pk-ene stemmer overens med indekseringen i PK
+        b = np.array([bk[:, k]] * I).transpose()
+        PK = np.vstack((np.array([PK[0] + h*np.transpose(Wk[k])@(d_sigma(Wk[k] @ Y[k] + b) * PK[0])]), PK))
+
+    b = np.array([bk[:, 0]] * I).transpose()
+    J_Wk = np.array([h*(PK[0] * d_sigma(Wk[0] @ Y[0] + b)) @ np.transpose(Y[0])])
+    J_bk = np.array([h*(PK[0] * d_sigma(Wk[0] @ Y[0] + b)) @ one])
+    for i in range(1, K):
+        b = np.array([bk[:, k]] * I).transpose()
+        J_Wk = np.vstack((np.array([h*(PK[k] * d_sigma(Wk[k] @ Y[k] + b)) @ np.transpose(Y[k])]), J_Wk))
+        J_bk = np.vstack((np.array([h * (PK[k] * d_sigma(Wk[k] @ Y[k] + b)) @ one]), J_bk))
+    return J_mu, J_w, J_Wk, J_bk
+
+J_mu, J_w, J_Wk, J_bk = gradient(Wk, bk, w, mu, YK(Y0))        #Y0 er placeholder
 
 
 ##############################################################################
