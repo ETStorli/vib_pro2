@@ -177,35 +177,5 @@ def laer_tall(list_y0, K, tau, iterasjon lengde):
 
 """
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ##############################################################################
                     #Selve programmet som kjenner igjen bildene
-
-Wk = np.eye(d,k=0)*rn.random()          #Def av d er øverst i programmet, linje 11
-bk = np.ones(d)*rn.random()
-omega = rn.random()
-mu = rn.random()
