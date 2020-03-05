@@ -19,7 +19,7 @@ w = rng.standard_normal(size=(d))
 mu = rng.standard_normal(size=1)
 one = np.ones(I)
 bk = rng.standard_normal(size=(d, K))
-Y0 = rng.standard_normal(size=(d, I))     #Placeholder. Y0 = initielle matrise med bilder
+#Y0 = rng.standard_normal(size=(d, I))     #Placeholder. Y0 = initielle matrise med bilder
 U0 = np.array((Wk, bk, w, mu))
 
 
@@ -31,9 +31,9 @@ def d_sigma(x): return 1 - (np.tanh(x))**2
 def Z(x): return eta(np.transpose(x)@w + mu*one)        #x = siste Y_K
 
 
-def big_j(big_z, c):            #Fungerer for numpy arrays
+def big_j(Z, c):            #Fungerer for numpy arrays
     c = -1*c
-    big_j = 0.5*la.norm(np.add(big_z, c))**2
+    big_j = 0.5*la.norm(np.add(Z, c))**2
     return big_j
 
 #Må returnere en tredimensjonal matrise, hvor den første dimensjonen svarer til iterasjon nr. k, og de to neste svarer til matrisen med bildet til det gitte laget k
@@ -49,9 +49,6 @@ def YK(Y0, K = K, sigma = sigma, h = h, Wk = Wk, bk = bk):
         Y = Y_out[k]
     return Y_out
 
-Y_out = YK(Y0)
-
-
 
 #############################################################################
 #Gradientberegninger
@@ -59,10 +56,17 @@ Y_out = YK(Y0)
 # Wk er tredimensjonell, bk er todimensjonell, Y er array med alle Y-matrisene
 # Disse brukes for å regne ut gradienten for utregning av parametrene som brukes i neste lag
 def gradient(Wk, bk, w, mu, Y):
-    J_mu = d_eta(np.transpose(np.transpose(Y_out[-1])@w + mu*one)) * (Z(Y_out[-1]) - C)
-    J_w = Y_out[-1]*((Z(Y_out[-1]) - C)*d_eta(np.transpose(Y_out[-1])@w + mu))
-
-    PK = np.array([np.outer(w, np.transpose((Z(Y_out[-1]) - C) * d_eta(np.transpose(Y_out[-1]) @ w + mu*one)))])
+    J_mu = d_eta(np.transpose(np.transpose(Y[-1])@w + mu*one)) * (Z(Y[-1]) - C)
+    #print(w)
+    #print(Y[-1].size)
+    print("---")
+    print(Y[-1])
+    print((np.transpose(Y[-1])@w))
+    print("---")
+    print("w = ", w)
+    J_w = Y[-1]@((Z(Y[-1]) - C)*d_eta(np.transpose(Y[-1])@w + mu))
+    print("J_w = ", J_w)
+    PK = np.array([np.outer(w, np.transpose((Z(Y[-1]) - C) * d_eta(np.transpose(Y[-1]) @ w + mu*one)))])
 
     for k in range(K-1, 0, -1):   #P0 brukes ikke så trenger ikke å regne den ut
         #Siden Pk regnes ut baklengs, stackes de baklengs inn i PK slik at alle Pk-ene stemmer overens med indekseringen i PK
@@ -78,7 +82,7 @@ def gradient(Wk, bk, w, mu, Y):
         J_bk = np.vstack((np.array([h * (PK[k] * d_sigma(Wk[k] @ Y[k] + b)) @ one]), J_bk))
     return J_mu, J_w, J_Wk, J_bk
 
-J_mu, J_w, J_Wk, J_bk = gradient(Wk, bk, w, mu, YK(Y0))        #Y0 er placeholder
+#J_mu, J_w, J_Wk, J_bk = gradient(Wk, bk, w, mu, YK(Y0))        #Y0 er placeholder
 
 
 ##############################################################################
@@ -116,7 +120,16 @@ def y0():
             yFalse[b_i] = posy[idx]
             b_i += 1
         C = [False if x<len(xFalse) else True for x in range(len(xFalse) + len(xTrue))]
-    return np.array((np.array((xFalse, yFalse)), np.array((xTrue, yTure)))), C
+    X = np.append(xFalse, xTrue)
+    print(X.size)
+    print(X)
+    Y = np.append(yFalse, yTure)
+    print(Y.size)
+    print(Y)
+    Z = np.vstack((X, Y))
+    print(Z.size)
+    print(Z)
+    return np.array((np.array((xFalse, yFalse)), np.array((xTrue, yTure)))), C, Z
 
 
 #Definert ovenfor også, big_z er definert som Z(x), hvor x er input matrisen. Veldig sikker på at den fungerer korrekt, spurte studass om den
@@ -193,7 +206,7 @@ def laer_tall(list_y0, K, tau, iterasjon lengde):
 
 j = 0
 tau = 0.01            #Læringsparameter. Vi skal bruke det som konvergerer raskest på intervallet [0.01,0.1]
-YK = Y0
+#YK = Y0
 # Tilfeldige startsverdier for vekter og bias står øverst i programmet
 
 
@@ -215,12 +228,14 @@ def u_j(U):
     U[3] = U[3] - tau[0]*U[3]
     return U
 
-def algoritme(Y0,N,grad,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk):
+def algoritme(Y0,N,grad,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk, w=w, mu = mu):
     j=0
     while j<N:
-        YK = YK(Y0,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk)         # Array med K Yk matriser
-        d_mu, d_omega, d_Wk, d_bk = grad(Wk,bk,omega,mu,YK)                # Regner ut gradieinten for parametrene våre
-        mu, omega, Wk, bk = u_j([d_mu,d_omega,d_Wk,d_bk])
-    return Yk, Wk, bk, omega, mu
+        print("Tåpkuk")
+        Yk = YK(Y0)         # Array med K Yk matriser
+        d_mu, d_omega, d_Wk, d_bk = grad(Wk,bk,w,mu,Yk)                # Regner ut gradieinten for parametrene våre
+        mu, w, Wk, bk = u_j([d_mu,d_omega,d_Wk,d_bk])
+    return Yk, Wk, bk, w, mu
 
-algoritme(Y0,2,gradient)
+Y0 = y0()[2]
+algoritme(Y0,5,gradient)
