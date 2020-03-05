@@ -31,72 +31,16 @@ def d_sigma(x): return 1 - (np.tanh(x))**2
 def Z(x): return eta(np.transpose(x)@w + mu*one)        #x = siste Y_K
 
 
-def big_j(big_z, c):            #Fungerer for numpy arrays
-    c = -1*c
-    big_j = 0.5*la.norm(np.add(big_z, c))**2
-    return big_j
-
-#Må returnere en tredimensjonal matrise, hvor den første dimensjonen svarer til iterasjon nr. k, og de to neste svarer til matrisen med bildet til det gitte laget k
-def YK(Y0, K = K, sigma = sigma, h = h, Wk = Wk, bk = bk):
-    Y_out = np.random.rand(K, d, I)
-    Y = Y0
-    for k in range(K):
-        X = Wk[k] @ Y
-        # bk er en kolonnevektor fra b, men leses som radvektor etter at vi har hentet den ut. Derfor transponerer vi
-        # Vi ganger med I for å få en matrise, som etter å ha transponert, blir en matrise med I bk-kolonnevektorer. Må gjøre det slik for at adderingen skal funke
-        X = X + np.array([bk[:, k]] * I).transpose()      #bk[:, k] leses: alle rader, i kolonne k. Henter altså ut kolonnevektor k fra matrisen bk
-        Y_out[k] = Y + h*sigma(X)
-        Y = Y_out[k]
-    return Y_out
-
-Y_out = YK(Y0)
-
-
-
 #############################################################################
-#Gradientberegninger
-
-# Wk er tredimensjonell, bk er todimensjonell, Y er array med alle Y-matrisene
-# Disse brukes for å regne ut gradienten for utregning av parametrene som brukes i neste lag
-def gradient(Wk, bk, w, mu, Y):
-    J_mu = d_eta(np.transpose(np.transpose(Y_out[-1])@w + mu*one)) * (Z(Y_out[-1]) - C)
-    J_w = Y_out[-1]*((Z(Y_out[-1]) - C)*d_eta(np.transpose(Y_out[-1])@w + mu))
-
-    PK = np.array([np.outer(w, np.transpose((Z(Y_out[-1]) - C) * d_eta(np.transpose(Y_out[-1]) @ w + mu*one)))])
-
-    for k in range(K-1, 0, -1):   #P0 brukes ikke så trenger ikke å regne den ut
-        #Siden Pk regnes ut baklengs, stackes de baklengs inn i PK slik at alle Pk-ene stemmer overens med indekseringen i PK
-        b = np.array([bk[:, k]] * I).transpose()
-        PK = np.vstack((np.array([PK[0] + h*np.transpose(Wk[k])@(d_sigma(Wk[k] @ Y[k] + b) * PK[0])]), PK))
-
-    b = np.array([bk[:, 0]] * I).transpose()
-    J_Wk = np.array([h*(PK[0] * d_sigma(Wk[0] @ Y[0] + b)) @ np.transpose(Y[0])])
-    J_bk = np.array([h*(PK[0] * d_sigma(Wk[0] @ Y[0] + b)) @ one])
-    for i in range(1, K):
-        b = np.array([bk[:, k]] * I).transpose()
-        J_Wk = np.vstack((np.array([h*(PK[k] * d_sigma(Wk[k] @ Y[k] + b)) @ np.transpose(Y[k])]), J_Wk))
-        J_bk = np.vstack((np.array([h * (PK[k] * d_sigma(Wk[k] @ Y[k] + b)) @ one]), J_bk))
-    return J_mu, J_w, J_Wk, J_bk
-
-J_mu, J_w, J_Wk, J_bk = gradient(Wk, bk, w, mu, YK(Y0))        #Y0 er placeholder
-
-
-##############################################################################
-#Adam decent algoritmen
-
-#kostfunksjon som måler hvor langt modellen er unna å klassifisere perfekt
-#For I bilder
-
-# big_j = 1/2 * np.sum(np.abs(Z-c)**2) == 1/2 la.norm(Z-c)**2
-# big_j(U) s.4 pdf
+            #Def av y0 og yk
 
 
 def y0():
-    """Lager en array av spirals, med gitt posisjon til true og false
+    #Lager en array av spirals, med gitt posisjon til true og false
 
-    Returns:
-        np.array -- arr[0] = [xpos, ypos] til false; arr[1] -- pos til True
-    """
+    #Returns:
+        #np.array -- arr[0] = [xpos, ypos] til false; arr[1] -- pos til True
+
     pos, bol = sp.get_data_spiral_2d()
     posx, posy= pos[0], pos[1]
 
@@ -118,6 +62,51 @@ def y0():
         C = [False if x<len(xFalse) else True for x in range(len(xFalse) + len(xTrue))]
     return np.array((np.array((xFalse, yFalse)), np.array((xTrue, yTure)))), C
 
+#Må returnere en tredimensjonal matrise, hvor den første dimensjonen svarer til iterasjon nr. k, og de to neste svarer til matrisen med bildet til det gitte laget k
+def YK(Y0, K = K, sigma = sigma, h = h, Wk = Wk, bk = bk):
+    Y_out = np.random.rand(K, d, I)
+    Y = Y0
+    for k in range(K):
+        X = Wk[k] @ Y
+        # bk er en kolonnevektor fra b, men leses som radvektor etter at vi har hentet den ut. Derfor transponerer vi
+        # Vi ganger med I for å få en matrise, som etter å ha transponert, blir en matrise med I bk-kolonnevektorer. Må gjøre det slik for at adderingen skal funke
+        X = X + np.array([bk[:, k]] * I).transpose()      #bk[:, k] leses: alle rader, i kolonne k. Henter altså ut kolonnevektor k fra matrisen bk
+        Y_out[k] = Y + h*sigma(X)
+        Y = Y_out[k]
+    return Y_out
+
+
+
+
+#############################################################################
+#Gradientberegninger
+
+# Wk er tredimensjonell, bk er todimensjonell, Y er array med alle Y-matrisene
+# Disse brukes for å regne ut gradienten for utregning av parametrene som brukes i neste lag
+def gradient(Wk, bk, w, mu, Y):
+    J_mu = d_eta(np.transpose(np.transpose(Y[-1])@w + mu*one)) * (Z(Y[-1]) - C)
+    J_w = Y[-1]*((Z(Y[-1]) - C)*d_eta(np.transpose(Y[-1])@w + mu))
+
+    PK = np.array([np.outer(w, np.transpose((Z(Y[-1]) - C) * d_eta(np.transpose(Y[-1]) @ w + mu*one)))])
+    print(np.transpose((Z(Y[-1]) - C) * d_eta(np.transpose(Y[-1]) @ w + mu*one))
+    for k in range(K-1, 0, -1):   #P0 brukes ikke så trenger ikke å regne den ut
+        #Siden Pk regnes ut baklengs, stackes de baklengs inn i PK slik at alle Pk-ene stemmer overens med indekseringen i PK
+        b = np.array([bk[:, k]] * I).transpose()
+        PK = np.vstack((np.array([PK[0] + h*np.transpose(Wk[k])@(d_sigma(Wk[k] @ Y[k] + b) * PK[0])]), PK))
+
+    b = np.array([bk[:, 0]] * I).transpose()
+    J_Wk = np.array([h*(PK[0] * d_sigma(Wk[0] @ Y[0] + b)) @ np.transpose(Y[0])])
+    J_bk = np.array([h*(PK[0] * d_sigma(Wk[0] @ Y[0] + b)) @ one])
+    for i in range(1, K):
+        b = np.array([bk[:, k]] * I).transpose()
+        J_Wk = np.vstack((np.array([h*(PK[k] * d_sigma(Wk[k] @ Y[k] + b)) @ np.transpose(Y[k])]), J_Wk))
+        J_bk = np.vstack((np.array([h * (PK[k] * d_sigma(Wk[k] @ Y[k] + b)) @ one]), J_bk))
+    return J_mu, J_w, J_Wk, J_bk
+
+
+
+##############################################################################
+#Adam decent algoritmen
 
 #Definert ovenfor også, big_z er definert som Z(x), hvor x er input matrisen. Veldig sikker på at den fungerer korrekt, spurte studass om den
 """
@@ -132,8 +121,6 @@ def big_j(big_z, c):                                # lager feil estimat for ver
     return big_j
 """
 
-#Forslag for adam algoritme. sorry toby, fjernet forslaget ditt da extension gjorde python triggered
-#Har vet ikke om det er korrekt input
 
 def adam_decent(gradient_J_U, U_j):
     beta_1 = 0.9
@@ -153,60 +140,25 @@ def adam_decent(gradient_J_U, U_j):
     return U_jp1
 
 
-
-
-    ####### Ueder er en ikke ferdig puedo for hovedfunksjonen i lærings algoritmen
-"""
-def laer_tall(list_y0, K, tau, iterasjon lengde):
-    generer mat_y0
-    generer tilfeldig Wk, b_k, omega, my
-
-    for j in range(1, n):
-        #g[j] = np.gradient(big_j*U^{j})
-        m[j] = beta_1*m[j-1] + (1-beta_1)*g[j]
-        v[j] = beta_2*v[j-1] + (1-beta_2)*(g[j]*g[j])
-        v_hat = v[j]/(1 - np.power(beta_2, j))
-        #U^{j+1} = U^j - alpha* (m_hat[j]/(np.sqrt(v_hat[j]) + epsilon))
-#Se også Stochastic gradient descent
-
-#2.4) Gradient til big_j(U)
-#∂J/∂W_k, ∂J/∂b_k, ∂J/∂w, ∂J/∂mu
-    while iterasjon mindre enn ønsket antall
-        lag Y_k pluss 1 ved å summere mat_y0 og vekt, basis kritere
-
-        lagre Y_k til neste iterasjon
-
-        Beregn P_k fra likning 7 i hefte
-
-        beregn "bitene av gradienten tilhørende projeksjon" i likn 5,6
-
-        backtrace fra P_K og finn alle P_k
-
-        beregn bidrag til gradientene fra liknin 9 og 10
-
-        oppdater vektene og bias ved likn 4 eller adam metoden
-    end
-"""
-
 ##############################################################################
                     #Selve programmet som kjenner igjen bildene
 
-j = 0
-tau = 0.01            #Læringsparameter. Vi skal bruke det som konvergerer raskest på intervallet [0.01,0.1]
-YK = Y0
+y0 = y0()
+YK = y0[0]
+
 # Tilfeldige startsverdier for vekter og bias står øverst i programmet
 
 
 def u_j(U):
-    """Regner ut U[j] hvor j går opp til N
+    #Regner ut U[j] hvor j går opp til N
 
-    Arguments:
-        N {int} -- # iterasjoner gjennom nettverket
-        U {np.array} -- U_0 -> start verdi for U = [Wk, bk, Ω, mu]
+    #Arguments:
+        #N {int} -- # iterasjoner gjennom nettverket
+        #U {np.array} -- U_0 -> start verdi for U = [Wk, bk, Ω, mu]
 
-    Returns:
-        U_j {np.array} -- U_j, hvor U = [Wk, bk, Ω, mu]
-    """
+    #Returns:
+        #U_j {np.array} -- U_j, hvor U = [Wk, bk, Ω, mu]
+
     tau = [.1, .01]
 
     U[0] = U[0] - tau[0]*U[0]
@@ -218,9 +170,9 @@ def u_j(U):
 def algoritme(Y0,N,grad,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk):
     j=0
     while j<N:
-        YK = YK(Y0,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk)         # Array med K Yk matriser
-        d_mu, d_omega, d_Wk, d_bk = grad(Wk,bk,omega,mu,YK)                # Regner ut gradieinten for parametrene våre
-        mu, omega, Wk, bk = u_j([d_mu,d_omega,d_Wk,d_bk])
+        Yk = YK(Y0,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk)         # Array med K Yk matriser
+        d_mu, d_omega, d_Wk, d_bk = grad(Wk,bk,omega,mu,YK) # Regner ut gradieinten for parametrene våre
+        mu, omega, Wk, bk = u_j([d_mu,d_omega,d_Wk,d_bk])   # Kalkulerer ny verdi for parametrene
     return Yk, Wk, bk, omega, mu
 
-algoritme(Y0,2,gradient)
+algoritme(YK,2,gradient)
