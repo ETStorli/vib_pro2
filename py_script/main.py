@@ -193,19 +193,11 @@ def laer_tall(list_y0, K, tau, iterasjon lengde):
 
 j = 0
 tau = 0.01            #Læringsparameter. Vi skal bruke det som konvergerer raskest på intervallet [0.01,0.1]
-Y0 = make_Y0(data):
 YK = Y0
 # Tilfeldige startsverdier for vekter og bias står øverst i programmet
 
-def algoritme(Y0,K,sigma,h,Wk,bk,N,grad):
-    j=0
-    while j<N:
-        YK = YK(Y0,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk)         # Array med K Yk matriser
-        d_mu, d_omega, d_Wk, d_bk = grad(mu,omega,Wk,bk,YK)                # Regner ut gradieinten for parametrene våre
-        mu, omega, Wk, bk = Oppdatering_parametere(d_mu,d_omega,d_Wk,d_bk)
-    return Yk, Wk, bk, omega, mu
 
-def u_j(N, U):
+def u_j(U):
     """Regner ut U[j] hvor j går opp til N
 
     Arguments:
@@ -216,14 +208,19 @@ def u_j(N, U):
         U_j {np.array} -- U_j, hvor U = [Wk, bk, Ω, mu]
     """
     tau = [.1, .01]
-    # TODO: Fiks gradient
-    #* grdgr
-    # gdgrdgrd
-    #! grdjlgrjdlg
-    #? grdgmkrdlmgkrd
-    for j in range(N):
-        U[0] = U[0] - tau[0]*U[0]
-        U[1] = U[1] - tau[0]*U[1]
-        U[2] = U[2] - tau[0]*U[2]
-        U[3] = U[3] - tau[0]*U[3]
+
+    U[0] = U[0] - tau[0]*U[0]
+    U[1] = U[1] - tau[0]*U[1]
+    U[2] = U[2] - tau[0]*U[2]
+    U[3] = U[3] - tau[0]*U[3]
     return U
+
+def algoritme(Y0,N,grad,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk):
+    j=0
+    while j<N:
+        YK = YK(Y0,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk)         # Array med K Yk matriser
+        d_mu, d_omega, d_Wk, d_bk = grad(Wk,bk,omega,mu,YK)                # Regner ut gradieinten for parametrene våre
+        mu, omega, Wk, bk = u_j([d_mu,d_omega,d_Wk,d_bk])
+    return Yk, Wk, bk, omega, mu
+
+algoritme(Y0,2,gradient)
