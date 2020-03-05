@@ -199,6 +199,11 @@ def u_j(N, U):
         U_j {np.array} -- U_j, hvor U = [Wk, bk, Ω, mu] 
     """
     tau = [.1, .01]
+    # TODO: Fiks gradient
+    #* grdgr
+    # gdgrdgrd
+    #! grdjlgrjdlg
+    #? grdgmkrdlmgkrd
     for j in range(N):
         U[0] = U[0] - tau[0]*U[0]
         U[1] = U[1] - tau[0]*U[1]
