@@ -18,7 +18,7 @@ W_k = np.zeros(d*d).reshape([d,d])
 
 
 ##############################################################################
-                    # Def av variabler for Y_0 og Y_k1
+#! Def av variabler for Y_0 og Y_k1
 #Y_(k+1) = Y_k = h*rho*(w_k*Y_k + b_k)
 Y_0 = np.zeros(d*I).reshape(d,I)
 
@@ -49,11 +49,12 @@ def big_j(big_z, c):            #Fungerer for numpy arrays
 ##############################################################################
                         #Def av Y_0 og Y_k1
 
-def Make_Y_0(Y_0):
+def make_Y_0(Y_0):
     pass
 
 
-def Make_Yk(Y_matrix,sigma,h,Wk,bk):
+
+def make_Yk(Y_matrix,sigma,h,Wk,bk):
     return Y_matrix+h*sigma*(Wk*Y_matrix+bk)
 
 def sigma(x):
@@ -61,17 +62,17 @@ def sigma(x):
     return sigma
 
 #############################################################################
-                        #Gradientberegninger
+#Gradientberegninger
 
 
 
 
 ##############################################################################
-                        #Adam decent algoritmen
+#Adam decent algoritmen
 
 #kostfunksjon som måler hvor langt modellen er unna å klassifisere perfekt
 #For I bilder
-#//
+
 # big_j = 1/2 * np.sum(np.abs(Z-c)**2) == 1/2 la.norm(Z-c)**2
 # big_j(U) s.4 pdf
 
@@ -80,7 +81,7 @@ def mkarray():
     """Lager en array av spirals, med gitt posisjon til true og false
     
     Returns:
-        np.array -- arr[0] = [xpos, ypos] til false; arr[1] ~pos til True
+        np.array -- arr[0] = [xpos, ypos] til false; arr[1] -- pos til True
     """
     pos, bol = sp.get_data_spiral_2d()
     posx, posy= pos[0], pos[1]
@@ -202,7 +203,7 @@ def laer_tall(list_y0, K, tau, iterasjon lengde):
 ##############################################################################
                     #Selve programmet som kjenner igjen bildene
 
-Wk = np.eye(d,k=0)*rn.random()          #Def av d er øverst i programmet, linje 11
+Wk = np.eye(d,k=0)*rn.random()          # Def av d er øverst i programmet, linje 11
 bk = np.ones(d)*rn.random()
 omega = rn.random()
 mu = rn.random()
