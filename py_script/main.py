@@ -181,16 +181,19 @@ def laer_tall(list_y0, K, tau, iterasjon lengde):
 """
 
 def u_j(N, U):
+    """Regner ut U[j] hvor j går opp til N
+    
+    Arguments:
+        N {int} -- # iterasjoner gjennom nettverket
+        U {np.array} -- U_0 -> start verdi for U = [Wk, bk, Ω, mu]
+    
+    Returns:
+        U_j {np.array} -- U_j, hvor U = [Wk, bk, Ω, mu] 
+    """
     tau = [.1, .01]
-    #U0[0] = Wk
-    #U0[1] = bk
-    #U0[2] = Ω
-    #U0[3] = mu
     for j in range(N):
         U[0] = U[0] - tau[0]*U[0]
         U[1] = U[1] - tau[0]*U[1]
         U[2] = U[2] - tau[0]*U[2]
         U[3] = U[3] - tau[0]*U[3]
     return U
-
-np.matrix
