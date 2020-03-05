@@ -12,11 +12,28 @@ print(get_data_spiral_2d(n_samples=200))
 
 d = 5
 h = 0.1
+<<<<<<< HEAD
 #data =  #startsdataen vi har fått oppgitt
+=======
+d = 2
+I = 10
+k = np.array(I)
+W_k = np.zeros(d*d).reshape([d,d])
+>>>>>>> 3cef5398682a8a98d02722004e8f4cb3855fe317
 
 
+<<<<<<< HEAD
 ##############################################################################
                     #Def av variabler for Y_0 og Y_k1
+=======
+#Y_(k+1) = Y_k = h*rho*(w_k*Y_k + b_k)
+Y_0 = np.zeros(d*I).reshape(d,I)
+
+def Y_k(d, I):
+    pass
+    
+
+>>>>>>> 3cef5398682a8a98d02722004e8f4cb3855fe317
 
 def eta(x):
     eta = 1/2 * (1 + np.tanh(x/2))

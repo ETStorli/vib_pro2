@@ -1,7 +1,11 @@
 venv/
 .DS_Store
 *.pdf
-provided/
+*.ipynb
 .vscode
 .pytest_cache/
+<<<<<<< HEAD
 __pycache__/
+=======
+testgit.py
+>>>>>>> 3cef5398682a8a98d02722004e8f4cb3855fe317
