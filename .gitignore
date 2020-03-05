@@ -6,3 +6,6 @@ venv/
 .pytest_cache/
 testgit.py
 __pycache__/
+testgit.py
+
+
