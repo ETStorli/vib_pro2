@@ -14,12 +14,15 @@ d = 2           #Antall piksel-elementer til hvert bilde. Hvert bilde er stablet
 I = 10          #Antall bilder
 h = 0.1         #Skrittlengde i transformasjonene
 C = np.ones(I)  #Vektor med skalarer på enten 1 eller 0 som forteller oss om "katt eller ikke katt"
-Wk = rng.standard_normal(size = (K, d, d))
-w = rng.standard_normal(size = (d))
-my = rng.standard_normal(size = 1)
+Wk = rng.standard_normal(size=(K, d, d))
+w = rng.standard_normal(size=(d))
+mu = rng.standard_normal(size=1)
 one = np.ones(I)
-bk = rng.standard_normal(size = (d, K))
-Y0 = rng.standard_normal(size = (d, I))     #Placeholder. Y0 = initielle matrise med bilder
+bk = rng.standard_normal(size=(d, K))
+Y0 = rng.standard_normal(size=(d, I))     #Placeholder. Y0 = initielle matrise med bilder
+U0 = np.array((Wk, bk, w, mu))
+
+
 
 
 ##############################################################################
@@ -31,13 +34,14 @@ def eta(x): return 1/2 * (1 + np.tanh(x/2))
 def d_eta(x): return 1/4 * (1 - (np.tanh(x/2))**2)
 def sigma(x): return np.tanh(x)
 def d_sigma(x): return 1 - (np.tanh(x))**2
-def Z(x): return eta(np.transpose(x)@w + my*one)        #x = siste Y_K
+def Z(x): return eta(np.transpose(x)@w + mu*one)        #x = siste Y_K
 
 
 def big_j(big_z, c):            #Fungerer for numpy arrays
     c = -1*c
     big_j = 0.5*la.norm(np.add(big_z, c))**2
     return big_j
+    
 
 
 
@@ -61,6 +65,7 @@ def YK(Y0, K = K, sigma = sigma, h = h, Wk = Wk, bk = bk):
     return Y_out
 
 Y_out = YK(Y0)
+
 
 
 #############################################################################
@@ -108,8 +113,8 @@ def mkarray():
 
 #Definert ovenfor også, big_z er definert som Z(x), hvor x er input matrisen. Veldig sikker på at den fungerer korrekt, spurte studass om den
 """
-def big_z(eta, mat_y, omega, my, d):        #funk er ikke ferdig, noe mer må gjøres med mat_y
-    big_z = eta(x)*(mat_y.transpose()*omega + my*np.eye(d, k=0))    #numpy.eye(a, b) lager en axa matrise hvor k = b bestemmer subdiag/diag som blir 1 og resten 0. Nå er diagonalen 1.
+def big_z(eta, mat_y, omega, mu, d):        #funk er ikke ferdig, noe mer må gjøres med mat_y
+    big_z = eta(x)*(mat_y.transpose()*omega + mu*np.eye(d, k=0))    #numpy.eye(a, b) lager en axa matrise hvor k = b bestemmer subdiag/diag som blir 1 og resten 0. Nå er diagonalen 1.
     return big_z
 
 # big_j fungerer
@@ -146,7 +151,7 @@ def adam_decent(gradient_J_U, U_j):
 """
 def laer_tall(list_y0, K, tau, iterasjon lengde):
     generer mat_y0
-    generer tilfeldig Wk, b_k, omega, my 
+    generer tilfeldig Wk, b_k, omega, mu 
     
     for j in range(1, n):
         #g[j] = np.gradient(big_j*U^{j})
@@ -172,40 +177,20 @@ def laer_tall(list_y0, K, tau, iterasjon lengde):
         beregn bidrag til gradientene fra liknin 9 og 10
 
         oppdater vektene og bias ved likn 4 eller adam metoden
-
     end
-
 """
 
+def u_j(N, U):
+    tau = [.1, .01]
+    #U0[0] = Wk
+    #U0[1] = bk
+    #U0[2] = Ω
+    #U0[3] = mu
+    for j in range(N):
+        U[0] = U[0] - tau[0]*U[0]
+        U[1] = U[1] - tau[0]*U[1]
+        U[2] = U[2] - tau[0]*U[2]
+        U[3] = U[3] - tau[0]*U[3]
+    return U
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-##############################################################################
-                    #Selve programmet som kjenner igjen bildene
-
-Wk = np.eye(d,k=0)*rn.random()          # Def av d er øverst i programmet, linje 11
-bk = np.ones(d)*rn.random()
-omega = rn.random()
-mu = rn.random()
+np.matrix
