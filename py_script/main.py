@@ -23,12 +23,6 @@ Y0 = rng.standard_normal(size=(d, I))     #Placeholder. Y0 = initielle matrise m
 U0 = np.array((Wk, bk, w, mu))
 
 
-
-
-##############################################################################
-                    # Def av variabler for Y_0 og Y_k1
-
-
 #Med matrise som argument virker funksjonene på hvert element i matrisen
 def eta(x): return 1/2 * (1 + np.tanh(x/2))
 def d_eta(x): return 1/4 * (1 - (np.tanh(x/2))**2)
@@ -41,15 +35,6 @@ def big_j(big_z, c):            #Fungerer for numpy arrays
     c = -1*c
     big_j = 0.5*la.norm(np.add(big_z, c))**2
     return big_j
-    
-
-
-
-##############################################################################
-                        #Def av Y_0 og Y_k1
-
-def Make_Y0(Y0):
-    pass
 
 #Må returnere en tredimensjonal matrise, hvor den første dimensjonen svarer til iterasjon nr. k, og de to neste svarer til matrisen med bildet til det gitte laget k
 def YK(Y0, K = K, sigma = sigma, h = h, Wk = Wk, bk = bk):
@@ -84,7 +69,7 @@ Y_out = YK(Y0)
 # big_j(U) s.4 pdf
 
 
-def mkarray():
+def y0():
     """Lager en array av spirals, med gitt posisjon til true og false
     
     Returns:
@@ -108,7 +93,8 @@ def mkarray():
             xFalse[b_i] = posx[idx]
             yFalse[b_i] = posy[idx]
             b_i += 1
-    return np.array((np.array((xFalse, yFalse)), np.array((xTrue, yTure))))
+        C = [False if x<len(xFalse) else True for x in range(len(xFalse) + len(xTrue))]
+    return np.array((np.array((xFalse, yFalse)), np.array((xTrue, yTure)))), C
 
 
 #Definert ovenfor også, big_z er definert som Z(x), hvor x er input matrisen. Veldig sikker på at den fungerer korrekt, spurte studass om den
