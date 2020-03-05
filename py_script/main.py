@@ -46,23 +46,30 @@ def optimise_u(U, tau):
 #Har vet ikke om det er korrekt input
 
 
-#Her er gradient _J_U listen med J derivert på div element i
-def adam_decent(gradient_J_U, U_j):
+#Her er gradient _J_U listen med J derivert på div element. U_j inneholder [W_K, B_k, w, my]
+def adam_decent(gradient_J_U, U_j, j):              #her må man ta inn j som teller iterasjonstallet
     beta_1 = 0.9
     beta_2 = 0.999
     alpha = 0.01
     litn_epsilon = 1E-8
-    v_j = 0                                                 #Dette er v_0
-    m_j = 0                                                 #dette er m_0
-    # TODO: Finn ut ka vi iterer over
     for u in range(0, len(U_j)):                            #Tanken er å bevege seg gjennom de 4 variablene i U_j
-        for j in range(len(U_j)):                        #Her er det tanken å iterere gjennom alle W_k i W_K men at len = 1 for alle andre verdier i U_j
-            g_j = gradient_J_U[u]**j                           # Gradienten er en matrise
-            m_j = beta_1* m_j + (1-beta_1)* g_j          #antar m_j i likn nå er m_j fra forrige iterasjon
-            v_j = beta_2*v_j +(1-beta_2)*(g_j*g_j)       #siste gj ledd er matrise mult.
+        v_j = 0                                 # Dette er v_0
+        m_j = 0                                 #dette er m_0
+        if u == 0 or u == 1:                    #befinner seg i W_k når u = 0, og Bk når u = 1
+            g_j = gradient_J_U[u] ** j                          # Gradienten er en matrise
+            m_j = beta_1 * m_j + (1 - beta_1) * g_j             # antar m_j i likn nå er m_j fra forrige iterasjon
+            v_j = beta_2 * v_j + (1 - beta_2) * (g_j * g_j)     # siste gj ledd er matrise mult.
+            m_j_hatt = m_j / (1 - beta_1 ** j)
+            v_hatt = v_j / (1 - beta_2 ** j)
+            for i in len(U_j[u]):                               #Itererer gjennom alle de k ulike matrisene eller bk verdiene
+                U_j[u][i] = U_j[u][i] - alpha * (m_j_hatt / (np.sqrt (v_hatt) + litn_epsilon))  # U_jp1 = U_(j+1)
+        elif u == 2 or u == 3:                                  #Her er det tanken å iterere gjennom alle W_k i W_K men at len = 1 for alle andre verdier i U_j
+            g_j = gradient_J_U[u]**j                            # Gradienten er en matrise
+            m_j = beta_1* m_j + (1-beta_1)* g_j                 #antar m_j i likn nå er m_j fra forrige iterasjon
+            v_j = beta_2*v_j +(1-beta_2)*(g_j*g_j)              #siste gj ledd er matrise mult.
             m_j_hatt = m_j/(1-beta_1**j)
             v_hatt = v_j/(1-beta_2**j)
-            U_j[u][j] = U_j[u][j] - alpha*(m_j_hatt/(np.sqrt(v_hatt)+litn_epsilon))       #U_jp1 = U_(j+1)
+            U_j[u] = U_j[u] - alpha*(m_j_hatt/(np.sqrt(v_hatt)+litn_epsilon))       #U_jp1 = U_(j+1)
     return U_j
 
 
