@@ -14,16 +14,13 @@ d = 2           #Antall piksel-elementer til hvert bilde. Hvert bilde er stablet
 I = 10          #Antall bilder
 h = 0.1         #Skrittlengde i transformasjonene
 C = np.ones(I)  #Vektor med skalarer på enten 1 eller 0 som forteller oss om "katt eller ikke katt"
-Wk = rng.standard_normal(size = (K, d, d))
-w = rng.standard_normal(size = (d))
-my = rng.standard_normal(size = 1)
+Wk = rng.standard_normal(size=(K, d, d))
+w = rng.standard_normal(size=(d))
+mu = rng.standard_normal(size=1)
 one = np.ones(I)
-bk = rng.standard_normal(size = (d, K))
-Y0 = rng.standard_normal(size = (d, I))     #Placeholder. Y0 = initielle matrise med bilder
-
-
-##############################################################################
-                    # Def av variabler for Y_0 og Y_k1
+bk = rng.standard_normal(size=(d, K))
+Y0 = rng.standard_normal(size=(d, I))     #Placeholder. Y0 = initielle matrise med bilder
+U0 = np.array((Wk, bk, w, mu))
 
 
 #Med matrise som argument virker funksjonene på hvert element i matrisen
@@ -31,21 +28,13 @@ def eta(x): return 1/2 * (1 + np.tanh(x/2))
 def d_eta(x): return 1/4 * (1 - (np.tanh(x/2))**2)
 def sigma(x): return np.tanh(x)
 def d_sigma(x): return 1 - (np.tanh(x))**2
-def Z(x): return eta(np.transpose(x)@w + my*one)        #x = siste Y_K
+def Z(x): return eta(np.transpose(x)@w + mu*one)        #x = siste Y_K
 
 
 def big_j(big_z, c):            #Fungerer for numpy arrays
     c = -1*c
     big_j = 0.5*la.norm(np.add(big_z, c))**2
     return big_j
-
-
-
-##############################################################################
-                        #Def av Y_0 og Y_k1
-
-def make_Y0(Y0):
-    pass
 
 #Må returnere en tredimensjonal matrise, hvor den første dimensjonen svarer til iterasjon nr. k, og de to neste svarer til matrisen med bildet til det gitte laget k
 def YK(Y0, K = K, sigma = sigma, h = h, Wk = Wk, bk = bk):
@@ -63,27 +52,50 @@ def YK(Y0, K = K, sigma = sigma, h = h, Wk = Wk, bk = bk):
 Y_out = YK(Y0)
 
 
+
 #############################################################################
-                        #Gradientberegninger
+#Gradientberegninger
 
+# Wk er tredimensjonell, bk er todimensjonell, Y er array med alle Y-matrisene
+# Disse brukes for å regne ut gradienten for utregning av parametrene som brukes i neste lag
+def gradient(Wk, bk, w, mu, Y):
+    J_mu = d_eta(np.transpose(np.transpose(Y_out[-1])@w + mu*one)) * (Z(Y_out[-1]) - C)
+    J_w = Y_out[-1]*((Z(Y_out[-1]) - C)*d_eta(np.transpose(Y_out[-1])@w + mu))
 
+    PK = np.array([np.outer(w, np.transpose((Z(Y_out[-1]) - C) * d_eta(np.transpose(Y_out[-1]) @ w + mu*one)))])
+
+    for k in range(K-1, 0, -1):   #P0 brukes ikke så trenger ikke å regne den ut
+        #Siden Pk regnes ut baklengs, stackes de baklengs inn i PK slik at alle Pk-ene stemmer overens med indekseringen i PK
+        b = np.array([bk[:, k]] * I).transpose()
+        PK = np.vstack((np.array([PK[0] + h*np.transpose(Wk[k])@(d_sigma(Wk[k] @ Y[k] + b) * PK[0])]), PK))
+
+    b = np.array([bk[:, 0]] * I).transpose()
+    J_Wk = np.array([h*(PK[0] * d_sigma(Wk[0] @ Y[0] + b)) @ np.transpose(Y[0])])
+    J_bk = np.array([h*(PK[0] * d_sigma(Wk[0] @ Y[0] + b)) @ one])
+    for i in range(1, K):
+        b = np.array([bk[:, k]] * I).transpose()
+        J_Wk = np.vstack((np.array([h*(PK[k] * d_sigma(Wk[k] @ Y[k] + b)) @ np.transpose(Y[k])]), J_Wk))
+        J_bk = np.vstack((np.array([h * (PK[k] * d_sigma(Wk[k] @ Y[k] + b)) @ one]), J_bk))
+    return J_mu, J_w, J_Wk, J_bk
+
+J_mu, J_w, J_Wk, J_bk = gradient(Wk, bk, w, mu, YK(Y0))        #Y0 er placeholder
 
 
 ##############################################################################
-                        #Adam decent algoritmen
+#Adam decent algoritmen
 
 #kostfunksjon som måler hvor langt modellen er unna å klassifisere perfekt
 #For I bilder
-#//
+
 # big_j = 1/2 * np.sum(np.abs(Z-c)**2) == 1/2 la.norm(Z-c)**2
 # big_j(U) s.4 pdf
 
 
-def mkarray():
+def y0():
     """Lager en array av spirals, med gitt posisjon til true og false
 
     Returns:
-        np.array -- arr[0] = [xpos, ypos] til false; arr[1] ~pos til True
+        np.array -- arr[0] = [xpos, ypos] til false; arr[1] -- pos til True
     """
     pos, bol = sp.get_data_spiral_2d()
     posx, posy= pos[0], pos[1]
@@ -103,13 +115,14 @@ def mkarray():
             xFalse[b_i] = posx[idx]
             yFalse[b_i] = posy[idx]
             b_i += 1
-    return np.array((np.array((xFalse, yFalse)), np.array((xTrue, yTure))))
+        C = [False if x<len(xFalse) else True for x in range(len(xFalse) + len(xTrue))]
+    return np.array((np.array((xFalse, yFalse)), np.array((xTrue, yTure)))), C
 
 
 #Definert ovenfor også, big_z er definert som Z(x), hvor x er input matrisen. Veldig sikker på at den fungerer korrekt, spurte studass om den
 """
-def big_z(eta, mat_y, omega, my, d):        #funk er ikke ferdig, noe mer må gjøres med mat_y
-    big_z = eta(x)*(mat_y.transpose()*omega + my*np.eye(d, k=0))    #numpy.eye(a, b) lager en axa matrise hvor k = b bestemmer subdiag/diag som blir 1 og resten 0. Nå er diagonalen 1.
+def big_z(eta, mat_y, omega, mu, d):        #funk er ikke ferdig, noe mer må gjøres med mat_y
+    big_z = eta(x)*(mat_y.transpose()*omega + mu*np.eye(d, k=0))    #numpy.eye(a, b) lager en axa matrise hvor k = b bestemmer subdiag/diag som blir 1 og resten 0. Nå er diagonalen 1.
     return big_z
 
 # big_j fungerer
@@ -172,9 +185,7 @@ def laer_tall(list_y0, K, tau, iterasjon lengde):
         beregn bidrag til gradientene fra liknin 9 og 10
 
         oppdater vektene og bias ved likn 4 eller adam metoden
-
     end
-
 """
 
 ##############################################################################
@@ -193,3 +204,21 @@ def algoritme(Y0,K,sigma,h,Wk,bk,N,grad):
         d_mu, d_omega, d_Wk, d_bk = grad(mu,omega,Wk,bk,YK)                # Regner ut gradieinten for parametrene våre
         mu, omega, Wk, bk = Oppdatering_parametere(d_mu,d_omega,d_Wk,d_bk)
     return Yk, Wk, bk, omega, mu
+
+def u_j(N, U):
+    """Regner ut U[j] hvor j går opp til N
+
+    Arguments:
+        N {int} -- # iterasjoner gjennom nettverket
+        U {np.array} -- U_0 -> start verdi for U = [Wk, bk, Ω, mu]
+
+    Returns:
+        U_j {np.array} -- U_j, hvor U = [Wk, bk, Ω, mu]
+    """
+    tau = [.1, .01]
+    for j in range(N):
+        U[0] = U[0] - tau[0]*U[0]
+        U[1] = U[1] - tau[0]*U[1]
+        U[2] = U[2] - tau[0]*U[2]
+        U[3] = U[3] - tau[0]*U[3]
+    return U
