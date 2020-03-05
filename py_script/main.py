@@ -44,7 +44,7 @@ def big_j(big_z, c):            #Fungerer for numpy arrays
 ##############################################################################
                         #Def av Y_0 og Y_k1
 
-def Make_Y0(Y0):
+def make_Y0(Y0):
     pass
 
 #Må returnere en tredimensjonal matrise, hvor den første dimensjonen svarer til iterasjon nr. k, og de to neste svarer til matrisen med bildet til det gitte laget k
@@ -81,7 +81,7 @@ Y_out = YK(Y0)
 
 def mkarray():
     """Lager en array av spirals, med gitt posisjon til true og false
-    
+
     Returns:
         np.array -- arr[0] = [xpos, ypos] til false; arr[1] ~pos til True
     """
@@ -146,8 +146,8 @@ def adam_decent(gradient_J_U, U_j):
 """
 def laer_tall(list_y0, K, tau, iterasjon lengde):
     generer mat_y0
-    generer tilfeldig Wk, b_k, omega, my 
-    
+    generer tilfeldig Wk, b_k, omega, my
+
     for j in range(1, n):
         #g[j] = np.gradient(big_j*U^{j})
         m[j] = beta_1*m[j-1] + (1-beta_1)*g[j]
@@ -160,15 +160,15 @@ def laer_tall(list_y0, K, tau, iterasjon lengde):
 #∂J/∂W_k, ∂J/∂b_k, ∂J/∂w, ∂J/∂mu
     while iterasjon mindre enn ønsket antall
         lag Y_k pluss 1 ved å summere mat_y0 og vekt, basis kritere
-        
+
         lagre Y_k til neste iterasjon
-        
+
         Beregn P_k fra likning 7 i hefte
-        
+
         beregn "bitene av gradienten tilhørende projeksjon" i likn 5,6
-        
+
         backtrace fra P_K og finn alle P_k
-        
+
         beregn bidrag til gradientene fra liknin 9 og 10
 
         oppdater vektene og bias ved likn 4 eller adam metoden
@@ -179,3 +179,17 @@ def laer_tall(list_y0, K, tau, iterasjon lengde):
 
 ##############################################################################
                     #Selve programmet som kjenner igjen bildene
+
+j = 0
+tau = 0.01            #Læringsparameter. Vi skal bruke det som konvergerer raskest på intervallet [0.01,0.1]
+Y0 = make_Y0(data):
+YK = Y0
+# Tilfeldige startsverdier for vekter og bias står øverst i programmet
+
+def algoritme(Y0,K,sigma,h,Wk,bk,N,grad):
+    j=0
+    while j<N:
+        YK = YK(Y0,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk)         # Array med K Yk matriser
+        d_mu, d_omega, d_Wk, d_bk = grad(mu,omega,Wk,bk,YK)                # Regner ut gradieinten for parametrene våre
+        mu, omega, Wk, bk = Oppdatering_parametere(d_mu,d_omega,d_Wk,d_bk)
+    return Yk, Wk, bk, omega, mu
