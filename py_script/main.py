@@ -19,7 +19,7 @@ w = rng.standard_normal(size=(d))
 mu = rng.standard_normal(size=1)
 one = np.ones(I)
 bk = rng.standard_normal(size=(d, K))
-Y0 = rng.standard_normal(size=(d, I))     #Placeholder. Y0 = initielle matrise med bilder
+#Y0 = rng.standard_normal(size=(d, I))     #Placeholder. Y0 = initielle matrise med bilder
 U0 = np.array((Wk, bk, w, mu))
 
 
@@ -31,6 +31,7 @@ def d_sigma(x): return 1 - (np.tanh(x))**2
 def Z(x): return eta(np.transpose(x)@w + mu*one)        #x = siste Y_K
 
 
+<<<<<<< HEAD
 #############################################################################
             #Def av y0 og yk
 
@@ -61,6 +62,12 @@ def y0():
             b_i += 1
         C = [False if x<len(xFalse) else True for x in range(len(xFalse) + len(xTrue))]
     return np.array((np.array((xFalse, yFalse)), np.array((xTrue, yTure)))), C
+=======
+def big_j(Z, c):            #Fungerer for numpy arrays
+    c = -1*c
+    big_j = 0.5*la.norm(np.add(Z, c))**2
+    return big_j
+>>>>>>> 580d94d5aedb125959068fb0e7225764c41eca66
 
 #Må returnere en tredimensjonal matrise, hvor den første dimensjonen svarer til iterasjon nr. k, og de to neste svarer til matrisen med bildet til det gitte laget k
 def YK(Y0, K = K, sigma = sigma, h = h, Wk = Wk, bk = bk):
@@ -75,8 +82,11 @@ def YK(Y0, K = K, sigma = sigma, h = h, Wk = Wk, bk = bk):
         Y = Y_out[k]
     return Y_out
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 580d94d5aedb125959068fb0e7225764c41eca66
 
 #############################################################################
 #Gradientberegninger
@@ -85,7 +95,20 @@ def YK(Y0, K = K, sigma = sigma, h = h, Wk = Wk, bk = bk):
 # Disse brukes for å regne ut gradienten for utregning av parametrene som brukes i neste lag
 def gradient(Wk, bk, w, mu, Y):
     J_mu = d_eta(np.transpose(np.transpose(Y[-1])@w + mu*one)) * (Z(Y[-1]) - C)
+<<<<<<< HEAD
     J_w = Y[-1]*((Z(Y[-1]) - C)*d_eta(np.transpose(Y[-1])@w + mu))
+=======
+    #print(w)
+    #print(Y[-1].size)
+    print("---")
+    print(Y[-1])
+    print((np.transpose(Y[-1])@w))
+    print("---")
+    print("w = ", w)
+    J_w = Y[-1]@((Z(Y[-1]) - C)*d_eta(np.transpose(Y[-1])@w + mu))
+    print("J_w = ", J_w)
+    PK = np.array([np.outer(w, np.transpose((Z(Y[-1]) - C) * d_eta(np.transpose(Y[-1]) @ w + mu*one)))])
+>>>>>>> 580d94d5aedb125959068fb0e7225764c41eca66
 
     PK = np.array([np.outer(w, np.transpose((Z(Y[-1]) - C) * d_eta(np.transpose(Y[-1]) @ w + mu*one)))])
     print(np.transpose((Z(Y[-1]) - C) * d_eta(np.transpose(Y[-1]) @ w + mu*one))
@@ -103,11 +126,62 @@ def gradient(Wk, bk, w, mu, Y):
         J_bk = np.vstack((np.array([h * (PK[k] * d_sigma(Wk[k] @ Y[k] + b)) @ one]), J_bk))
     return J_mu, J_w, J_Wk, J_bk
 
+<<<<<<< HEAD
+=======
+#J_mu, J_w, J_Wk, J_bk = gradient(Wk, bk, w, mu, YK(Y0))        #Y0 er placeholder
+>>>>>>> 580d94d5aedb125959068fb0e7225764c41eca66
 
 
 ##############################################################################
 #Adam decent algoritmen
 
+<<<<<<< HEAD
+=======
+#kostfunksjon som måler hvor langt modellen er unna å klassifisere perfekt
+#For I bilder
+
+# big_j = 1/2 * np.sum(np.abs(Z-c)**2) == 1/2 la.norm(Z-c)**2
+# big_j(U) s.4 pdf
+
+
+def y0():
+    """Lager en array av spirals, med gitt posisjon til true og false
+
+    Returns:
+        np.array -- arr[0] = [xpos, ypos] til false; arr[1] -- pos til True
+    """
+    pos, bol = sp.get_data_spiral_2d()
+    posx, posy= pos[0], pos[1]
+
+    xTrue = np.zeros(sum(bol))
+    yTure = np.zeros(sum(bol))
+    xFalse = np.zeros_like(xTrue)
+    yFalse = np.zeros_like(xTrue)
+    r = 0
+    b_i = 0
+    for idx, b in enumerate(bol):
+        if b:
+            xTrue[r] = posx[idx]
+            yTure[r] = posy[idx]
+            r += 1
+        else:
+            xFalse[b_i] = posx[idx]
+            yFalse[b_i] = posy[idx]
+            b_i += 1
+        C = [False if x<len(xFalse) else True for x in range(len(xFalse) + len(xTrue))]
+    X = np.append(xFalse, xTrue)
+    print(X.size)
+    print(X)
+    Y = np.append(yFalse, yTure)
+    print(Y.size)
+    print(Y)
+    Z = np.vstack((X, Y))
+    print(Z.size)
+    print(Z)
+    return np.array((np.array((xFalse, yFalse)), np.array((xTrue, yTure)))), C, Z
+
+
+>>>>>>> 580d94d5aedb125959068fb0e7225764c41eca66
 #Definert ovenfor også, big_z er definert som Z(x), hvor x er input matrisen. Veldig sikker på at den fungerer korrekt, spurte studass om den
 """
 def big_z(eta, mat_y, omega, mu, d):        #funk er ikke ferdig, noe mer må gjøres med mat_y
@@ -143,9 +217,15 @@ def adam_decent(gradient_J_U, U_j):
 ##############################################################################
                     #Selve programmet som kjenner igjen bildene
 
+<<<<<<< HEAD
 y0 = y0()
 YK = y0[0]
 
+=======
+j = 0
+tau = 0.01            #Læringsparameter. Vi skal bruke det som konvergerer raskest på intervallet [0.01,0.1]
+#YK = Y0
+>>>>>>> 580d94d5aedb125959068fb0e7225764c41eca66
 # Tilfeldige startsverdier for vekter og bias står øverst i programmet
 
 
@@ -167,12 +247,23 @@ def u_j(U):
     U[3] = U[3] - tau[0]*U[3]
     return U
 
-def algoritme(Y0,N,grad,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk):
+def algoritme(Y0,N,grad,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk, w=w, mu = mu):
     j=0
     while j<N:
+<<<<<<< HEAD
         Yk = YK(Y0,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk)         # Array med K Yk matriser
         d_mu, d_omega, d_Wk, d_bk = grad(Wk,bk,omega,mu,YK) # Regner ut gradieinten for parametrene våre
         mu, omega, Wk, bk = u_j([d_mu,d_omega,d_Wk,d_bk])   # Kalkulerer ny verdi for parametrene
     return Yk, Wk, bk, omega, mu
 
 algoritme(YK,2,gradient)
+=======
+        print("Tåpkuk")
+        Yk = YK(Y0)         # Array med K Yk matriser
+        d_mu, d_omega, d_Wk, d_bk = grad(Wk,bk,w,mu,Yk)                # Regner ut gradieinten for parametrene våre
+        mu, w, Wk, bk = u_j([d_mu,d_omega,d_Wk,d_bk])
+    return Yk, Wk, bk, w, mu
+
+Y0 = y0()[2]
+algoritme(Y0,5,gradient)
+>>>>>>> 580d94d5aedb125959068fb0e7225764c41eca66
