@@ -8,36 +8,31 @@ import plotting as pt
 import random as rn
 
 
-d = 5
-h = 0.1
-#data =  #startsdataen vi har fått oppgitt
-d = 2
-I = 10
-k = np.array(I)
-W_k = np.zeros(d*d).reshape([d,d])
+rng = np.random.default_rng()
+K = 3           #Antall lag
+d = 2           #Antall piksel-elementer til hvert bilde. Hvert bilde er stablet opp i en vektor av lengde d
+I = 10          #Antall bilder
+h = 0.1         #Skrittlengde i transformasjonene
+C = np.ones(I)  #Vektor med skalarer på enten 1 eller 0 som forteller oss om "katt eller ikke katt"
+Wk = rng.standard_normal(size = (K, d, d))
+w = rng.standard_normal(size = (d))
+my = rng.standard_normal(size = 1)
+one = np.ones(I)
+bk = rng.standard_normal(size = (d, K))
+Y0 = rng.standard_normal(size = (d, I))     #Placeholder. Y0 = initielle matrise med bilder
 
 
 ##############################################################################
                     # Def av variabler for Y_0 og Y_k1
-#Y_(k+1) = Y_k = h*rho*(w_k*Y_k + b_k)
-Y_0 = np.zeros(d*I).reshape(d,I)
-
-def Y_k(d, I):
-    pass
-    
 
 
-def eta(x):
-    eta = 1/2 * (1 + np.tanh(x/2))
-    return eta
+#Med matrise som argument virker funksjonene på hvert element i matrisen
+def eta(x): return 1/2 * (1 + np.tanh(x/2))
+def d_eta(x): return 1/4 * (1 - (np.tanh(x/2))**2)
+def sigma(x): return np.tanh(x)
+def d_sigma(x): return 1 - (np.tanh(x))**2
+def Z(x): return eta(np.transpose(x)@w + my*one)        #x = siste Y_K
 
-def sigma(x):
-    sigma = np.tanh(x)
-    return sigma
-
-def big_z(eta, mat_y, omega, my, d):        #funk er ikke ferdig, noe mer må gjøres med mat_y
-    big_z = eta(x)*(mat_y.transpose()*omega + my*np.eye(d, k=0))    #numpy.eye(a, b) lager en axa matrise hvor subdiagonal/diag b er 1 og resten 0. Nå er diagonalen 1.
-    return big_z
 
 def big_j(big_z, c):            #Fungerer for numpy arrays
     c = -1*c
@@ -49,16 +44,24 @@ def big_j(big_z, c):            #Fungerer for numpy arrays
 ##############################################################################
                         #Def av Y_0 og Y_k1
 
-def Make_Y_0(Y_0):
+def Make_Y0(Y0):
     pass
 
+#Må returnere en tredimensjonal matrise, hvor den første dimensjonen svarer til iterasjon nr. k, og de to neste svarer til matrisen med bildet til det gitte laget k
+def YK(Y0, K = K, sigma = sigma, h = h, Wk = Wk, bk = bk):
+    Y_out = np.random.rand(K, d, I)
+    Y = Y0
+    for k in range(K):
+        X = Wk[k] @ Y
+        # bk er en kolonnevektor fra b, men leses som radvektor etter at vi har hentet den ut. Derfor transponerer vi
+        # Vi ganger med I for å få en matrise, som etter å ha transponert, blir en matrise med I bk-kolonnevektorer. Må gjøre det slik for at adderingen skal funke
+        X = X + np.array([bk[:, k]] * I).transpose()      #bk[:, k] leses: alle rader, i kolonne k. Henter altså ut kolonnevektor k fra matrisen bk
+        Y_out[k] = Y + h*sigma(X)
+        Y = Y_out[k]
+    return Y_out
 
-def Make_Yk(Y_matrix,sigma,h,Wk,bk):
-    return Y_matrix+h*sigma*(Wk*Y_matrix+bk)
+Y_out = YK(Y0)
 
-def sigma(x):
-    sigma = np.tanh(x)
-    return sigma
 
 #############################################################################
                         #Gradientberegninger
@@ -103,18 +106,18 @@ def mkarray():
     return np.array((np.array((xFalse, yFalse)), np.array((xTrue, yTure))))
 
 
-
+#Definert ovenfor også, big_z er definert som Z(x), hvor x er input matrisen. Veldig sikker på at den fungerer korrekt, spurte studass om den
+"""
 def big_z(eta, mat_y, omega, my, d):        #funk er ikke ferdig, noe mer må gjøres med mat_y
     big_z = eta(x)*(mat_y.transpose()*omega + my*np.eye(d, k=0))    #numpy.eye(a, b) lager en axa matrise hvor k = b bestemmer subdiag/diag som blir 1 og resten 0. Nå er diagonalen 1.
     return big_z
-
 
 # big_j fungerer
 def big_j(big_z, c):                                # lager feil estimat for verdiene funnet fra Z.
     c = -1* c                                       # Bytter fortegn på np.array c.
     big_j = 0.5*la.norm(np.add(big_z, c))**2        # np.add summerer hvert i'te element i big_z og c sammen, tar deretter norm **2
     return big_j
-
+"""
 
 #Forslag for adam algoritme. sorry toby, fjernet forslaget ditt da extension gjorde python triggered
 #Har vet ikke om det er korrekt input
