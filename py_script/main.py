@@ -11,9 +11,9 @@ import random as rn
 rng = np.random.default_rng()
 K = 3           #Antall lag
 d = 2           #Antall piksel-elementer til hvert bilde. Hvert bilde er stablet opp i en vektor av lengde d
-I = 10          #Antall bilder
+I = 200          #Antall bilder
 h = 0.1         #Skrittlengde i transformasjonene
-C = np.ones(I)  #Vektor med skalarer på enten 1 eller 0 som forteller oss om "katt eller ikke katt"
+#C = np.ones(I)  #Vektor med skalarer på enten 1 eller 0 som forteller oss om "katt eller ikke katt"  Placeholder
 Wk = rng.standard_normal(size=(K, d, d))
 w = rng.standard_normal(size=(d))
 mu = rng.standard_normal(size=1)
@@ -55,17 +55,9 @@ def YK(Y0, K = K, sigma = sigma, h = h, Wk = Wk, bk = bk):
 
 # Wk er tredimensjonell, bk er todimensjonell, Y er array med alle Y-matrisene
 # Disse brukes for å regne ut gradienten for utregning av parametrene som brukes i neste lag
-def gradient(Wk, bk, w, mu, Y):
+def gradient(Wk, bk, w, mu, Y, C):
     J_mu = d_eta(np.transpose(np.transpose(Y[-1])@w + mu*one)) * (Z(Y[-1]) - C)
-    #print(w)
-    #print(Y[-1].size)
-    print("---")
-    print(Y[-1])
-    print((np.transpose(Y[-1])@w))
-    print("---")
-    print("w = ", w)
     J_w = Y[-1]@((Z(Y[-1]) - C)*d_eta(np.transpose(Y[-1])@w + mu))
-    print("J_w = ", J_w)
     PK = np.array([np.outer(w, np.transpose((Z(Y[-1]) - C) * d_eta(np.transpose(Y[-1]) @ w + mu*one)))])
 
     for k in range(K-1, 0, -1):   #P0 brukes ikke så trenger ikke å regne den ut
@@ -76,32 +68,19 @@ def gradient(Wk, bk, w, mu, Y):
     b = np.array([bk[:, 0]] * I).transpose()
     J_Wk = np.array([h*(PK[0] * d_sigma(Wk[0] @ Y[0] + b)) @ np.transpose(Y[0])])
     J_bk = np.array([h*(PK[0] * d_sigma(Wk[0] @ Y[0] + b)) @ one])
-    for i in range(1, K):
+    for k in range(1, K):
         b = np.array([bk[:, k]] * I).transpose()
         J_Wk = np.vstack((np.array([h*(PK[k] * d_sigma(Wk[k] @ Y[k] + b)) @ np.transpose(Y[k])]), J_Wk))
         J_bk = np.vstack((np.array([h * (PK[k] * d_sigma(Wk[k] @ Y[k] + b)) @ one]), J_bk))
-    return J_mu, J_w, J_Wk, J_bk
-
-#J_mu, J_w, J_Wk, J_bk = gradient(Wk, bk, w, mu, YK(Y0))        #Y0 er placeholder
-
+    return J_Wk, J_bk.transpose(), J_w, J_mu
 
 ##############################################################################
-#Adam decent algoritmen
-
-#kostfunksjon som måler hvor langt modellen er unna å klassifisere perfekt
-#For I bilder
-
-# big_j = 1/2 * np.sum(np.abs(Z-c)**2) == 1/2 la.norm(Z-c)**2
-# big_j(U) s.4 pdf
-
-
 def y0():
     """Lager en array av spirals, med gitt posisjon til true og false
-
     Returns:
         np.array -- arr[0] = [xpos, ypos] til false; arr[1] -- pos til True
     """
-    pos, bol = sp.get_data_spiral_2d()
+    pos, bol = sp.get_data_spiral_2d(I)
     posx, posy= pos[0], pos[1]
 
     xTrue = np.zeros(sum(bol))
@@ -121,79 +100,41 @@ def y0():
             b_i += 1
         C = [False if x<len(xFalse) else True for x in range(len(xFalse) + len(xTrue))]
     X = np.append(xFalse, xTrue)
-    print(X.size)
-    print(X)
     Y = np.append(yFalse, yTure)
-    print(Y.size)
-    print(Y)
     Z = np.vstack((X, Y))
-    print(Z.size)
-    print(Z)
     return np.array((np.array((xFalse, yFalse)), np.array((xTrue, yTure)))), C, Z
 
 
-#Definert ovenfor også, big_z er definert som Z(x), hvor x er input matrisen. Veldig sikker på at den fungerer korrekt, spurte studass om den
-"""
-def big_z(eta, mat_y, omega, mu, d):        #funk er ikke ferdig, noe mer må gjøres med mat_y
-    big_z = eta(x)*(mat_y.transpose()*omega + mu*np.eye(d, k=0))    #numpy.eye(a, b) lager en axa matrise hvor k = b bestemmer subdiag/diag som blir 1 og resten 0. Nå er diagonalen 1.
-    return big_z
-
-# big_j fungerer
-def big_j(big_z, c):                                # lager feil estimat for verdiene funnet fra Z.
-    c = -1* c                                       # Bytter fortegn på np.array c.
-    big_j = 0.5*la.norm(np.add(big_z, c))**2        # np.add summerer hvert i'te element i big_z og c sammen, tar deretter norm **2
-    return big_j
-"""
-
-#Forslag for adam algoritme. sorry toby, fjernet forslaget ditt da extension gjorde python triggered
-#Har vet ikke om det er korrekt input
-
-
-# Her er gradient _J_U listen med J derivert på div element. U_j inneholder [W_K, B_k, w, my]
-def adam_decent(gradient_J_U, U_j, j):              # her må man ta inn j som teller iterasjonstallet
+#Her er gradient _J_U listen med J derivert på div element. U_j inneholder [W_K, B_k, w, my]
+def adam_decent(gradient_J_U, U_j, j):              #her må man ta inn j som teller iterasjonstallet
     beta_1 = 0.9
     beta_2 = 0.999
     alpha = 0.01
     litn_epsilon = 1E-8
-    for u in range(0, len(U_j)):                            # Tanken er å bevege seg gjennom de 4 variablene i U_j
+    for u in range(0, len(U_j)):                            #Tanken er å bevege seg gjennom de 4 variablene i U_j
         v_j = 0                                 # Dette er v_0
-        m_j = 0                                 # dette er m_0
-        if u == 0 or u == 1:                    # befinner seg i W_k når u = 0,
+        m_j = 0                                 #dette er m_0
+        if u == 2 or u == 3:                    #befinner seg i W_k når u = 0, og Bk når u = 1
             g_j = gradient_J_U[u] ** j                          # Gradienten er en matrise
             m_j = beta_1 * m_j + (1 - beta_1) * g_j             # antar m_j i likn nå er m_j fra forrige iterasjon
             v_j = beta_2 * v_j + (1 - beta_2) * (g_j * g_j)     # siste gj ledd er matrise mult.
             m_j_hatt = m_j / (1 - beta_1 ** j)
             v_hatt = v_j / (1 - beta_2 ** j)
-            for i in len(U_j[u]):                               # Itererer gjennom alle de k ulike matrisene eller bk verdiene
-                U_j[u][i] = U_j[u][i] - alpha * (m_j_hatt / (np.sqrt (v_hatt) + litn_epsilon))  # Håper her hele matrisen i [u][i] blir overskrevet og vektoren
-        elif u == 2 or u == 3:                                  # Her er det tanken å iterere gjennom alle W_k i W_K men at len = 1 for alle andre verdier i U_j
+            for i in len(U_j[u]):                               #Itererer gjennom alle de k ulike matrisene eller bk verdiene
+                U_j[u][i] = U_j[u][i] - alpha * (m_j_hatt / (np.sqrt (v_hatt) + litn_epsilon))  # U_jp1 = U_(j+1)
+        elif u == 0 or u == 1:                                  #Her er det tanken å iterere gjennom alle W_k i W_K men at len = 1 for alle andre verdier i U_j
             g_j = gradient_J_U[u]**j                            # Gradienten er en matrise
-            m_j = beta_1* m_j + (1-beta_1)* g_j                 # antar m_j i likn nå er m_j fra forrige iterasjon
-            v_j = beta_2*v_j +(1-beta_2)*(g_j*g_j)              # siste gj ledd er matrise mult.
+            m_j = beta_1* m_j + (1-beta_1)* g_j                 #antar m_j i likn nå er m_j fra forrige iterasjon
+            v_j = beta_2*v_j +(1-beta_2)*(g_j*g_j)              #siste gj ledd er matrise mult.
             m_j_hatt = m_j/(1-beta_1**j)
             v_hatt = v_j/(1-beta_2**j)
-            U_j[u] = U_j[u] - alpha*(m_j_hatt/(np.sqrt(v_hatt)+litn_epsilon))       #overskriver u med = U[u](j+1)
+            U_j[u] = U_j[u] - alpha*(m_j_hatt/(np.sqrt(v_hatt)+litn_epsilon))       #U_jp1 = U_(j+1)
     return U_j
-
-##############################################################################
-                    #Selve programmet som kjenner igjen bildene
 
 j = 0
 tau = 0.01            #Læringsparameter. Vi skal bruke det som konvergerer raskest på intervallet [0.01,0.1]
-#YK = Y0
-# Tilfeldige startsverdier for vekter og bias står øverst i programmet
 
-
-def u_j(U):
-    """Regner ut U[j] hvor j går opp til N
-
-    Arguments:
-        N {int} -- # iterasjoner gjennom nettverket
-        U {np.array} -- U_0 -> start verdi for U = [Wk, bk, Ω, mu]
-
-    Returns:
-        U_j {np.array} -- U_j, hvor U = [Wk, bk, Ω, mu]
-    """
+def u_j(U):           #Returnerer de oppdaterte parameterene for neste iterasjon
     tau = [.1, .01]
 
     U[0] = U[0] - tau[0]*U[0]
@@ -202,14 +143,35 @@ def u_j(U):
     U[3] = U[3] - tau[0]*U[3]
     return U
 
-def algoritme(Y0,N,grad,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk, w=w, mu = mu):
+##############################################################################
+#Selve programmet som kjenner igjen bildene
+# Tilfeldige startsverdier for vekter og bias står øverst i programmet
+
+
+def algoritme(N,grad,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk, w=w, mu = mu):
     j=0
     while j<N:
-        print("Tåpkuk")
-        Yk = YK(Y0)         # Array med K Yk matriser
-        d_mu, d_omega, d_Wk, d_bk = grad(Wk,bk,w,mu,Yk)                # Regner ut gradieinten for parametrene våre
-        mu, w, Wk, bk = u_j([d_mu,d_omega,d_Wk,d_bk])
-    return Yk, Wk, bk, w, mu
+        _, C, Y0 = y0()
+        Yk = YK(Y0)         # Array med K Yk matriser, kjører bildene igjennom alle lagene ved funk. YK
+        d_Wk, d_bk, d_w, d_mu = grad(Wk,bk,w,mu,Yk,C)                # Regner ut gradieinten for parametrene våre
+        Wk, bk, w, mu = u_j([d_Wk, d_bk, d_w, d_mu])                 # Oppdaterer parametrene vhp. u_j
+        j += 1
+    return Yk[-1], Wk, bk, w, mu
 
-Y0 = y0()[2]
-algoritme(Y0,5,gradient)
+Y_K, Wk, bk, w, mu = algoritme(5,gradient)
+
+# 1)
+# Per nå kjøres SAMME Y0 igjennom modellen vår. Rett?
+# Comment på commenten: Har gjort det slik at vi henter en ny Y0 for hver iterasjon
+
+m, _, _= y0()
+plt.plot(m[0][0], m[0][1], '.')
+plt.plot(m[1][0], m[1][1], '.')
+plt.show()
+
+# 2)
+# Må ha funk som kan plotte Y_K, det siste bildet etter alle lagene. Slik det er satt opp,
+# er de første I/2 bildene False, og de siste I/2 bildene er True
+
+# 3)
+# Hva bruker vi big_J for? Er den testet og er den rett?
