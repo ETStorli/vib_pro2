@@ -8,7 +8,7 @@ import spirals as sp
 import random as rn
 rng = np.random.default_rng()
 
-K = 3           #Antall lag
+K = 15           #Antall lag
 d = 2           #Antall piksel-elementer til hvert bilde. Hvert bilde er stablet opp i en vektor av lengde d
 I = 200       #Antall bilder
 h = 0.1         #Skrittlengde i transformasjonene
@@ -17,7 +17,10 @@ w = rng.standard_normal(size=(d))
 mu = rng.standard_normal(size=1)
 one = np.ones(I)
 bk = rng.standard_normal(size=(d, K))
+
 U0 = np.array((Wk, bk, w, mu))
+y0, C = sp.get_data_spiral_2d(I)
+C = np.reshape(C, I)
 
 #Med matrise som argument virker funksjonene på hvert element i matrisen
 def eta(x): return 1/2 * (1 + np.tanh(x/2))
@@ -26,39 +29,10 @@ def sigma(x): return np.tanh(x)
 def d_sigma(x): return 1 - (np.tanh(x))**2
 def Z(x): return eta(np.transpose(x)@w + mu*one)        #x = siste Y_K
 
-def y0():
-    """Lager en array av spirals, med gitt posisjon til true og false
-    Returns:
-        np.array -- arr[0] = [xpos, ypos] til false; arr[1] -- pos til True
-    """
-    pos, bol = sp.get_data_spiral_2d(I)
-    posx, posy = pos[0], pos[1]
 
-    xTrue = np.zeros(sum(bol))
-    yTure = np.zeros(sum(bol))
-    xFalse = np.zeros_like(xTrue)
-    yFalse = np.zeros_like(xTrue)
-    r = 0
-    b_i = 0
-    for idx, b in enumerate(bol):
-        if b:
-            xTrue[r] = posx[idx]
-            yTure[r] = posy[idx]
-            r += 1
-        else:
-            xFalse[b_i] = posx[idx]
-            yFalse[b_i] = posy[idx]
-            b_i += 1
-        C = [False if x < len(xFalse) else True for x in range(
-            len(xFalse) + len(xTrue))]
-    X = np.append(xFalse, xTrue)
-    Y = np.append(yFalse, yTure)
-    Z = np.vstack((X, Y))
-    return np.array((np.array((xFalse, yFalse)), np.array((xTrue, yTure)))), C, Z
-
-def YK(K=K, sigma=sigma, h=h, Wk=Wk, bk=bk):
+def YK(y0, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk):
     Y_out = np.random.rand(K, d, I)
-    Y = y0()[2]
+    Y = y0
     for k in range(K):
         X = Wk[k] @ Y
         # bk er en kolonnevektor fra b, men leses som radvektor etter at vi har hentet den ut. Derfor transponerer vi
@@ -102,10 +76,10 @@ def optimering(grad_U, U_j):           #Returnerer de oppdaterte parameterene fo
     U_j[3] = U_j[3] - tau[0]*grad_U[3]
     return U_j
 
-def algoritme(N,grad,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk, w=w, mu = mu):
+def algoritme(N,grad, y0=y0, C=C, K=K,sigma=sigma,h=h,Wk=Wk,bk=bk, w=w, mu = mu):
     j=0
     while j<N:
-        _, C, Y0 = y0()
+        C, Y0 = C, y0
         Yk = YK(Y0)         # Array med K Yk matriser, kjører bildene igjennom alle lagene ved funk. YK
         d_Wk, d_bk, d_w, d_mu = grad(Wk,bk,w,mu,Yk,C)                # Regner ut gradieinten for parametrene våre
         Wk, bk, w, mu = optimering([d_Wk, d_bk, d_w, d_mu], [Wk, bk, w, mu])     # Oppdaterer parametrene vhp. u_j
