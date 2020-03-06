@@ -10,7 +10,7 @@ rng = np.random.default_rng()
 
 K = 3           #Antall lag
 d = 2           #Antall piksel-elementer til hvert bilde. Hvert bilde er stablet opp i en vektor av lengde d
-I = 200          #Antall bilder
+I = 10          #Antall bilder
 h = 0.1         #Skrittlengde i transformasjonene
 C = np.ones(I)  #Vektor med skalarer på enten 1 eller 0 som forteller oss om "katt eller ikke katt"
 Wk = rng.standard_normal(size=(K, d, d))
@@ -33,7 +33,7 @@ def y0():
     Returns:
         np.array -- arr[0] = [xpos, ypos] til false; arr[1] -- pos til True
     """
-    pos, bol = sp.get_data_spiral_2d()
+    pos, bol = sp.get_data_spiral_2d(I)
     posx, posy = pos[0], pos[1]
 
     xTrue = np.zeros(sum(bol))
@@ -84,6 +84,7 @@ def gradient(Y, Wk=Wk, bk=bk, w=w, mu=mu):
 
     for k in range(K-1, 0, -1):   #P0 brukes ikke så trenger ikke å regne den ut
         #Siden Pk regnes ut baklengs, stackes de baklengs inn i PK slik at alle Pk-ene stemmer overens med indekseringen i PK
+        #! Andre iter blir file hos viktor
         b = np.array([bk[:, k]] * I).transpose()
         PK = np.vstack((np.array([PK[0] + h*np.transpose(Wk[k])@(d_sigma(Wk[k] @ Y[k] + b) * PK[0])]), PK))
 
@@ -118,15 +119,14 @@ def u_j(U):
     return U
 
 
-def algoritme(y_0,N,grad,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk):
+def algoritme(y_0,N,grad,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk, w=w, mu=mu):
     j=0
     while j<N:
         Yk = YK(y_0,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk)         # Array med K Yk matriser
-        d_mu, d_omega, d_Wk, d_bk = grad(Wk,bk,omega,mu,YK)                # Regner ut gradieinten for parametrene våre
-        mu, omega, Wk, bk = u_j([d_mu,d_omega,d_Wk,d_bk])
-    return Yk, Wk, bk, omega, mu
+        d_mu, d_omega, d_Wk, d_bk = grad(Wk, bk, w, mu, YK)                # Regner ut gradieinten for parametrene våre
+        mu, w, Wk, bk = u_j([d_mu, d_omega, d_Wk, d_bk])
+    return Yk, Wk, bk, w, mu
 
-#algoritme(y_0,2,gradient)
 
 
 

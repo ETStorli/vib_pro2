@@ -37,7 +37,7 @@ def get_data_spiral_2d(n_samples=200):
     features = features[:, indexes]
     labels = labels[indexes]
 
-
+    
     return features, labels
 
 
