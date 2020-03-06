@@ -12,7 +12,6 @@ K = 3           #Antall lag
 d = 2           #Antall piksel-elementer til hvert bilde. Hvert bilde er stablet opp i en vektor av lengde d
 I = 200       #Antall bilder
 h = 0.1         #Skrittlengde i transformasjonene
-#C = np.ones(I)  #Vektor med skalarer på enten 1 eller 0 som forteller oss om "katt eller ikke katt"  Placeholder
 Wk = rng.standard_normal(size=(K, d, d))
 w = rng.standard_normal(size=(d))
 mu = rng.standard_normal(size=1)
@@ -29,7 +28,6 @@ def Z(x): return eta(np.transpose(x)@w + mu*one)        #x = siste Y_K
 
 def y0():
     """Lager en array av spirals, med gitt posisjon til true og false
-
     Returns:
         np.array -- arr[0] = [xpos, ypos] til false; arr[1] -- pos til True
     """
@@ -37,7 +35,7 @@ def y0():
     posx, posy = pos[0], pos[1]
 
     xTrue = np.zeros(sum(bol))
-    yTrue = np.zeros(sum(bol))
+    yTure = np.zeros(sum(bol))
     xFalse = np.zeros_like(xTrue)
     yFalse = np.zeros_like(xTrue)
     r = 0
@@ -45,7 +43,7 @@ def y0():
     for idx, b in enumerate(bol):
         if b:
             xTrue[r] = posx[idx]
-            yTrue[r] = posy[idx]
+            yTure[r] = posy[idx]
             r += 1
         else:
             xFalse[b_i] = posx[idx]
@@ -53,17 +51,14 @@ def y0():
             b_i += 1
         C = [False if x < len(xFalse) else True for x in range(
             len(xFalse) + len(xTrue))]
+    X = np.append(xFalse, xTrue)
+    Y = np.append(yFalse, yTure)
+    Z = np.vstack((X, Y))
+    return np.array((np.array((xFalse, yFalse)), np.array((xTrue, yTure)))), C, Z
 
-        Z = np.array([np.append(xFalse, xTrue), np.append(yFalse, yTrue)])
-    return np.array((np.array((xFalse, yFalse)), np.array((xTrue, yTrue)))), C, Z
-
-#Må returnere en tredimensjonal matrise, hvor den første dimensjonen svarer til iterasjon nr. k, og de to neste svarer til matrisen med bildet til det gitte laget k
-
-y_start = y0()[2]
-
-def YK(Y0=y_start, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk):
+def YK(K=K, sigma=sigma, h=h, Wk=Wk, bk=bk):
     Y_out = np.random.rand(K, d, I)
-    Y = Y0
+    Y = y0()[2]
     for k in range(K):
         X = Wk[k] @ Y
         # bk er en kolonnevektor fra b, men leses som radvektor etter at vi har hentet den ut. Derfor transponerer vi
@@ -73,9 +68,6 @@ def YK(Y0=y_start, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk):
         Y = Y_out[k]
     return Y_out
 
-
-# Wk er tredimensjonell, bk er todimensjonell, Y er array med alle Y-matrisene
-# Disse brukes for å regne ut gradienten for utregning av parametrene som brukes i neste lag
 def gradient(Wk, bk, w, mu, Y, C):
     J_mu = d_eta(np.transpose(np.transpose(Y[-1])@w + mu*one)) @ (Z(Y[-1]) - C)
     J_w = Y[-1]@((Z(Y[-1]) - C)*d_eta(np.transpose(Y[-1])@w + mu))
@@ -96,39 +88,6 @@ def gradient(Wk, bk, w, mu, Y, C):
         J_bk = np.vstack((np.array([h * (PK[k] * d_sigma(Wk[k] @ Y[k] + b)) @ one]), J_bk))
     return J_Wk, J_bk.transpose(), J_w, J_mu
 
-##############################################################################
-def y0():
-    """Lager en array av spirals, med gitt posisjon til true og false
-    Returns:
-        np.array -- arr[0] = [xpos, ypos] til false; arr[1] -- pos til True
-    """
-    pos, bol = sp.get_data_spiral_2d(I)
-    posx, posy= pos[0], pos[1]
-
-    xTrue = np.zeros(sum(bol))
-    yTure = np.zeros(sum(bol))
-    xFalse = np.zeros_like(xTrue)
-    yFalse = np.zeros_like(xTrue)
-    r = 0
-    b_i = 0
-    for idx, b in enumerate(bol):
-        if b:
-            xTrue[r] = posx[idx]
-            yTure[r] = posy[idx]
-            r += 1
-        else:
-            xFalse[b_i] = posx[idx]
-            yFalse[b_i] = posy[idx]
-            b_i += 1
-        C = [False if x<len(xFalse) else True for x in range(len(xFalse) + len(xTrue))]
-    X = np.append(xFalse, xTrue)
-    Y = np.append(yFalse, yTure)
-    Z = np.vstack((X, Y))
-    return np.array((np.array((xFalse, yFalse)), np.array((xTrue, yTure)))), C, Z
-
-############################################
-
-
 def optimering(grad_U, U_j):           #Returnerer de oppdaterte parameterene for neste iterasjon
     tau = [.1, .01]
     """
@@ -143,11 +102,6 @@ def optimering(grad_U, U_j):           #Returnerer de oppdaterte parameterene fo
     U_j[3] = U_j[3] - tau[0]*grad_U[3]
     return U_j
 
-##############################################################################
-#Selve programmet som kjenner igjen bildene
-# Tilfeldige startsverdier for vekter og bias står øverst i programmet
-
-
 def algoritme(N,grad,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk, w=w, mu = mu):
     j=0
     while j<N:
@@ -159,19 +113,6 @@ def algoritme(N,grad,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk, w=w, mu = mu):
         j += 1
     return Yk[-1], Wk, bk, w, mu
 
-Y_K, Wk, bk, w, mu = algoritme(5000, gradient)
-
-# 1)
-# Per nå kjøres SAMME Y0 igjennom modellen vår. Rett?
-# Comment på commenten: Har gjort det slik at vi henter en ny Y0 for hver iterasjon
-
-m, _, _= y0()
-"""
-plt.plot(m[0][0], m[0][1], '.')
-plt.plot(m[1][0], m[1][1], '.')
-plt.show()
-"""
-
 def split_YK(Y_k):
     x_false_true = np.split(Y_k[0], 2)
     y_false_true = np.split(Y_K[1], 2)
@@ -181,16 +122,11 @@ def split_YK(Y_k):
     return Y_false, Y_true
 
 
-Y_false , Y_true = split_YK(Y_K)
+#Y_K, Wk, bk, w, mu = algoritme(50000, gradient)
 
-
-
-
-plt.figure()
-plt.plot(Y_false[0], Y_false[1], '.', color = "r")
-plt.plot(Y_true[0], Y_true[1], '.', color = "b")
-plt.show()
-""""""
+# 1)
+# Per nå kjøres SAMME Y0 igjennom modellen vår. Rett?
+# Comment på commenten: Har gjort det slik at vi henter en ny Y0 for hver iterasjon
 
 # 2)
 
