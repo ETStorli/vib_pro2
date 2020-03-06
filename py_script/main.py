@@ -148,58 +148,32 @@ def big_j(big_z, c):                                # lager feil estimat for ver
 #Forslag for adam algoritme. sorry toby, fjernet forslaget ditt da extension gjorde python triggered
 #Har vet ikke om det er korrekt input
 
-def adam_decent(gradient_J_U, U_j):
+
+# Her er gradient _J_U listen med J derivert på div element. U_j inneholder [W_K, B_k, w, my]
+def adam_decent(gradient_J_U, U_j, j):              # her må man ta inn j som teller iterasjonstallet
     beta_1 = 0.9
     beta_2 = 0.999
     alpha = 0.01
     litn_epsilon = 1E-8
-    v_j = 0                                                 #Dette er v_0
-    m_j = 0                                                 #dette er m_0
-    # TODO: Finn ut ka vi iterer over
-    for j in range(0,5):
-        g_j = gradient_J_U                           # Gradienten er en matrise
-        m_j = beta_1* m_j + (1-beta_1)* g_j          #antar m_j i likn nå er m_j fra forrige iterasjon
-        v_j = beta_2*v_j +(1-beta_2)*(g_j*g_j)       #siste gj ledd er matrise mult.
-        m_j_hatt = m_j/(1-beta_1**j)
-        v_hatt = v_j/(1-beta_2**j)
-        U_jp1 = U_j - alpha*(m_j_hatt/(np.sqrt(v_hatt)+litn_epsilon))       #U_jp1 = U_(j+1)
-    return U_jp1
-
-
-
-
-    ####### Ueder er en ikke ferdig puedo for hovedfunksjonen i lærings algoritmen
-"""
-def laer_tall(list_y0, K, tau, iterasjon lengde):
-    generer mat_y0
-    generer tilfeldig Wk, b_k, omega, my
-
-    for j in range(1, n):
-        #g[j] = np.gradient(big_j*U^{j})
-        m[j] = beta_1*m[j-1] + (1-beta_1)*g[j]
-        v[j] = beta_2*v[j-1] + (1-beta_2)*(g[j]*g[j])
-        v_hat = v[j]/(1 - np.power(beta_2, j))
-        #U^{j+1} = U^j - alpha* (m_hat[j]/(np.sqrt(v_hat[j]) + epsilon))
-#Se også Stochastic gradient descent
-
-#2.4) Gradient til big_j(U)
-#∂J/∂W_k, ∂J/∂b_k, ∂J/∂w, ∂J/∂mu
-    while iterasjon mindre enn ønsket antall
-        lag Y_k pluss 1 ved å summere mat_y0 og vekt, basis kritere
-
-        lagre Y_k til neste iterasjon
-
-        Beregn P_k fra likning 7 i hefte
-
-        beregn "bitene av gradienten tilhørende projeksjon" i likn 5,6
-
-        backtrace fra P_K og finn alle P_k
-
-        beregn bidrag til gradientene fra liknin 9 og 10
-
-        oppdater vektene og bias ved likn 4 eller adam metoden
-    end
-"""
+    for u in range(0, len(U_j)):                            # Tanken er å bevege seg gjennom de 4 variablene i U_j
+        v_j = 0                                 # Dette er v_0
+        m_j = 0                                 # dette er m_0
+        if u == 0 or u == 1:                    # befinner seg i W_k når u = 0,
+            g_j = gradient_J_U[u] ** j                          # Gradienten er en matrise
+            m_j = beta_1 * m_j + (1 - beta_1) * g_j             # antar m_j i likn nå er m_j fra forrige iterasjon
+            v_j = beta_2 * v_j + (1 - beta_2) * (g_j * g_j)     # siste gj ledd er matrise mult.
+            m_j_hatt = m_j / (1 - beta_1 ** j)
+            v_hatt = v_j / (1 - beta_2 ** j)
+            for i in len(U_j[u]):                               # Itererer gjennom alle de k ulike matrisene eller bk verdiene
+                U_j[u][i] = U_j[u][i] - alpha * (m_j_hatt / (np.sqrt (v_hatt) + litn_epsilon))  # Håper her hele matrisen i [u][i] blir overskrevet og vektoren
+        elif u == 2 or u == 3:                                  # Her er det tanken å iterere gjennom alle W_k i W_K men at len = 1 for alle andre verdier i U_j
+            g_j = gradient_J_U[u]**j                            # Gradienten er en matrise
+            m_j = beta_1* m_j + (1-beta_1)* g_j                 # antar m_j i likn nå er m_j fra forrige iterasjon
+            v_j = beta_2*v_j +(1-beta_2)*(g_j*g_j)              # siste gj ledd er matrise mult.
+            m_j_hatt = m_j/(1-beta_1**j)
+            v_hatt = v_j/(1-beta_2**j)
+            U_j[u] = U_j[u] - alpha*(m_j_hatt/(np.sqrt(v_hatt)+litn_epsilon))       #overskriver u med = U[u](j+1)
+    return U_j
 
 ##############################################################################
                     #Selve programmet som kjenner igjen bildene
