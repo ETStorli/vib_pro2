@@ -11,7 +11,7 @@ import random as rn
 rng = np.random.default_rng()
 K = 3           #Antall lag
 d = 2           #Antall piksel-elementer til hvert bilde. Hvert bilde er stablet opp i en vektor av lengde d
-I = 200          #Antall bilder
+I = 200       #Antall bilder
 h = 0.1         #Skrittlengde i transformasjonene
 #C = np.ones(I)  #Vektor med skalarer på enten 1 eller 0 som forteller oss om "katt eller ikke katt"  Placeholder
 Wk = rng.standard_normal(size=(K, d, d))
@@ -168,7 +168,7 @@ def algoritme(N,grad,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk, w=w, mu = mu):
         j += 1
     return Yk[-1], Wk, bk, w, mu
 
-Y_K, Wk, bk, w, mu = algoritme(5, gradient)
+Y_K, Wk, bk, w, mu = algoritme(5000, gradient)
 
 # 1)
 # Per nå kjøres SAMME Y0 igjennom modellen vår. Rett?
@@ -181,33 +181,25 @@ plt.plot(m[1][0], m[1][1], '.')
 plt.show()
 """
 
-
-"""
-print(len(Y_K[0]))
-
-"""
-
 def split_YK(Y_k):
-    Y_false = np.array([])
-    Y_true = np.array([])
-    for i in range(0, int(I/2)):
-        Y_false = np.append([Y_K[0][int(i)]][Y_K[1][int(i)]])
-    for j in range(int(I/2), I):
-        Y_true = [[Y_K[0][i]][Y_K[1][i]]]
-    return Y_false, Y_true
+    x_false_true = np.split(Y_k[0], 2)
+    y_false_true = np.split(Y_K[1], 2)
+    Y_false = np.vstack((x_false_true[0], y_false_true[0]))
+    Y_true = np.vstack((x_false_true[1], y_false_true[1]))
 
+    return Y_false, Y_true
 
 
 Y_false , Y_true = split_YK(Y_K)
 
-print(split_YK(Y_K))
 
-"""
+
+
 plt.figure()
 plt.plot(Y_false[0], Y_false[1], '.', color = "r")
 plt.plot(Y_true[0], Y_true[1], '.', color = "b")
 plt.show()
-"""
+""""""
 
 # 2)
 
