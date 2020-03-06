@@ -11,9 +11,9 @@ import random as rn
 rng = np.random.default_rng()
 K = 3           #Antall lag
 d = 2           #Antall piksel-elementer til hvert bilde. Hvert bilde er stablet opp i en vektor av lengde d
-I = 10          #Antall bilder
+I = 200          #Antall bilder
 h = 0.1         #Skrittlengde i transformasjonene
-C = np.ones(I)  #Vektor med skalarer på enten 1 eller 0 som forteller oss om "katt eller ikke katt"
+#C = np.ones(I)  #Vektor med skalarer på enten 1 eller 0 som forteller oss om "katt eller ikke katt"  Placeholder
 Wk = rng.standard_normal(size=(K, d, d))
 w = rng.standard_normal(size=(d))
 mu = rng.standard_normal(size=1)
@@ -93,6 +93,7 @@ def YK(Y0, K = K, sigma = sigma, h = h, Wk = Wk, bk = bk):
 
 # Wk er tredimensjonell, bk er todimensjonell, Y er array med alle Y-matrisene
 # Disse brukes for å regne ut gradienten for utregning av parametrene som brukes i neste lag
+<<<<<<< HEAD
 def gradient(Wk, bk, w, mu, Y):
     J_mu = d_eta(np.transpose(np.transpose(Y[-1])@w + mu*one)) * (Z(Y[-1]) - C)
 <<<<<<< HEAD
@@ -105,8 +106,11 @@ def gradient(Wk, bk, w, mu, Y):
     print((np.transpose(Y[-1])@w))
     print("---")
     print("w = ", w)
+=======
+def gradient(Wk, bk, w, mu, Y, C):
+    J_mu = d_eta(np.transpose(np.transpose(Y[-1])@w + mu*one)) @ (Z(Y[-1]) - C)
+>>>>>>> e17bf3dc4a0a04a7051cba1b6e8cb41030cc8ad8
     J_w = Y[-1]@((Z(Y[-1]) - C)*d_eta(np.transpose(Y[-1])@w + mu))
-    print("J_w = ", J_w)
     PK = np.array([np.outer(w, np.transpose((Z(Y[-1]) - C) * d_eta(np.transpose(Y[-1]) @ w + mu*one)))])
 >>>>>>> 580d94d5aedb125959068fb0e7225764c41eca66
 
@@ -120,10 +124,11 @@ def gradient(Wk, bk, w, mu, Y):
     b = np.array([bk[:, 0]] * I).transpose()
     J_Wk = np.array([h*(PK[0] * d_sigma(Wk[0] @ Y[0] + b)) @ np.transpose(Y[0])])
     J_bk = np.array([h*(PK[0] * d_sigma(Wk[0] @ Y[0] + b)) @ one])
-    for i in range(1, K):
+    for k in range(1, K):
         b = np.array([bk[:, k]] * I).transpose()
         J_Wk = np.vstack((np.array([h*(PK[k] * d_sigma(Wk[k] @ Y[k] + b)) @ np.transpose(Y[k])]), J_Wk))
         J_bk = np.vstack((np.array([h * (PK[k] * d_sigma(Wk[k] @ Y[k] + b)) @ one]), J_bk))
+<<<<<<< HEAD
     return J_mu, J_w, J_Wk, J_bk
 
 <<<<<<< HEAD
@@ -144,13 +149,17 @@ def gradient(Wk, bk, w, mu, Y):
 # big_j(U) s.4 pdf
 
 
+=======
+    return J_Wk, J_bk.transpose(), J_w, J_mu
+
+##############################################################################
+>>>>>>> e17bf3dc4a0a04a7051cba1b6e8cb41030cc8ad8
 def y0():
     """Lager en array av spirals, med gitt posisjon til true og false
-
     Returns:
         np.array -- arr[0] = [xpos, ypos] til false; arr[1] -- pos til True
     """
-    pos, bol = sp.get_data_spiral_2d()
+    pos, bol = sp.get_data_spiral_2d(I)
     posx, posy= pos[0], pos[1]
 
     xTrue = np.zeros(sum(bol))
@@ -170,17 +179,13 @@ def y0():
             b_i += 1
         C = [False if x<len(xFalse) else True for x in range(len(xFalse) + len(xTrue))]
     X = np.append(xFalse, xTrue)
-    print(X.size)
-    print(X)
     Y = np.append(yFalse, yTure)
-    print(Y.size)
-    print(Y)
     Z = np.vstack((X, Y))
-    print(Z.size)
-    print(Z)
     return np.array((np.array((xFalse, yFalse)), np.array((xTrue, yTure)))), C, Z
 
+############################################
 
+<<<<<<< HEAD
 >>>>>>> 580d94d5aedb125959068fb0e7225764c41eca66
 #Definert ovenfor også, big_z er definert som Z(x), hvor x er input matrisen. Veldig sikker på at den fungerer korrekt, spurte studass om den
 """
@@ -197,23 +202,40 @@ def big_j(big_z, c):                                # lager feil estimat for ver
 
 
 def adam_decent(gradient_J_U, U_j):
+=======
+#Her er gradient _J_U listen med J derivert på div element. U_j inneholder [W_K, B_k, w, my]
+def adam_decent(gradient_J_U, U_j, j):              #her må man ta inn j som teller iterasjonstallet
+>>>>>>> e17bf3dc4a0a04a7051cba1b6e8cb41030cc8ad8
     beta_1 = 0.9
     beta_2 = 0.999
     alpha = 0.01
     litn_epsilon = 1E-8
-    v_j = 0                                                 #Dette er v_0
-    m_j = 0                                                 #dette er m_0
-    # TODO: Finn ut ka vi iterer over
-    for j in range(0,5):
-        g_j = gradient_J_U                           # Gradienten er en matrise
-        m_j = beta_1* m_j + (1-beta_1)* g_j          #antar m_j i likn nå er m_j fra forrige iterasjon
-        v_j = beta_2*v_j +(1-beta_2)*(g_j*g_j)       #siste gj ledd er matrise mult.
-        m_j_hatt = m_j/(1-beta_1**j)
-        v_hatt = v_j/(1-beta_2**j)
-        U_jp1 = U_j - alpha*(m_j_hatt/(np.sqrt(v_hatt)+litn_epsilon))       #U_jp1 = U_(j+1)
-    return U_jp1
+    for u in range(0, len(U_j)):                            #Tanken er å bevege seg gjennom de 4 variablene i U_j
+        v_j = 0                                 # Dette er v_0
+        m_j = 0                                 #dette er m_0
+        if u == 2 or u == 3:                    #befinner seg i W_k når u = 0, og Bk når u = 1
+            g_j = gradient_J_U[u] ** j                          # Gradienten er en matrise
+            m_j = beta_1 * m_j + (1 - beta_1) * g_j             # antar m_j i likn nå er m_j fra forrige iterasjon
+            v_j = beta_2 * v_j + (1 - beta_2) * (g_j * g_j)     # siste gj ledd er matrise mult.
+            m_j_hatt = m_j / (1 - beta_1 ** j)
+            v_hatt = v_j / (1 - beta_2 ** j)
+            for i in len(U_j[u]):                               #Itererer gjennom alle de k ulike matrisene eller bk verdiene
+                U_j[u][i] = U_j[u][i] - alpha * (m_j_hatt / (np.sqrt (v_hatt) + litn_epsilon))  # U_jp1 = U_(j+1)
+        elif u == 0 or u == 1:                                  #Her er det tanken å iterere gjennom alle W_k i W_K men at len = 1 for alle andre verdier i U_j
+            g_j = gradient_J_U[u]**j                            # Gradienten er en matrise
+            m_j = beta_1* m_j + (1-beta_1)* g_j                 #antar m_j i likn nå er m_j fra forrige iterasjon
+            v_j = beta_2*v_j +(1-beta_2)*(g_j*g_j)              #siste gj ledd er matrise mult.
+            m_j_hatt = m_j/(1-beta_1**j)
+            v_hatt = v_j/(1-beta_2**j)
+            U_j[u] = U_j[u] - alpha*(m_j_hatt/(np.sqrt(v_hatt)+litn_epsilon))       #U_jp1 = U_(j+1)
+    return U_j
 
+##################################################
 
+j = 0
+tau = 0.01            #Læringsparameter. Vi skal bruke det som konvergerer raskest på intervallet [0.01,0.1]
+
+<<<<<<< HEAD
 ##############################################################################
                     #Selve programmet som kjenner igjen bildene
 
@@ -240,13 +262,83 @@ def u_j(U):
         #U_j {np.array} -- U_j, hvor U = [Wk, bk, Ω, mu]
 
     tau = [.1, .01]
+=======
 
-    U[0] = U[0] - tau[0]*U[0]
-    U[1] = U[1] - tau[0]*U[1]
-    U[2] = U[2] - tau[0]*U[2]
-    U[3] = U[3] - tau[0]*U[3]
-    return U
+def optimering(grad_U, U_j):           #Returnerer de oppdaterte parameterene for neste iterasjon
+    tau = [.1, .01]
+    """
+    #print("U_J array :", U_j)
+    print("Grad U[3]", grad_U[3])
+    
+    print("grad_U array: ", grad_U)
+    """
+    U_j[0] = U_j[0] - tau[0]*grad_U[0]
+    U_j[1] = U_j[1] - tau[0]*grad_U[1]
+    U_j[2] = U_j[2] - tau[0]*grad_U[2]
+    U_j[3] = U_j[3] - tau[0]*grad_U[3]
+    return U_j
 
+##############################################################################
+#Selve programmet som kjenner igjen bildene
+# Tilfeldige startsverdier for vekter og bias står øverst i programmet
+
+
+def algoritme(N,grad,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk, w=w, mu = mu):
+    j=0
+    while j<N:
+        _, C, Y0 = y0()
+        Yk = YK(Y0)         # Array med K Yk matriser, kjører bildene igjennom alle lagene ved funk. YK
+        d_Wk, d_bk, d_w, d_mu = grad(Wk,bk,w,mu,Yk,C)                # Regner ut gradieinten for parametrene våre
+        Wk, bk, w, mu = optimering([d_Wk, d_bk, d_w, d_mu], [Wk, bk, w, mu])     # Oppdaterer parametrene vhp. u_j
+        #print("wk, ", Wk,"bk: ", bk, "w: ", w, "my, ",  mu)
+        j += 1
+    return Yk[-1], Wk, bk, w, mu
+
+Y_K, Wk, bk, w, mu = algoritme(5, gradient)
+
+# 1)
+# Per nå kjøres SAMME Y0 igjennom modellen vår. Rett?
+# Comment på commenten: Har gjort det slik at vi henter en ny Y0 for hver iterasjon
+
+m, _, _= y0()
+"""
+plt.plot(m[0][0], m[0][1], '.')
+plt.plot(m[1][0], m[1][1], '.')
+plt.show()
+"""
+
+
+"""
+print(len(Y_K[0]))
+
+"""
+
+def split_YK(Y_k):
+    Y_false = np.array([])
+    Y_true = np.array([])
+    for i in range(0, int(I/2)):
+        Y_false = np.append([Y_K[0][int(i)]][Y_K[1][int(i)]])
+    for j in range(int(I/2), I):
+        Y_true = [[Y_K[0][i]][Y_K[1][i]]]
+    return Y_false, Y_true
+
+
+
+Y_false , Y_true = split_YK(Y_K)
+
+print(split_YK(Y_K))
+
+"""
+plt.figure()
+plt.plot(Y_false[0], Y_false[1], '.', color = "r")
+plt.plot(Y_true[0], Y_true[1], '.', color = "b")
+plt.show()
+"""
+>>>>>>> e17bf3dc4a0a04a7051cba1b6e8cb41030cc8ad8
+
+# 2)
+
+<<<<<<< HEAD
 def algoritme(Y0,N,grad,K=K,sigma=sigma,h=h,Wk=Wk,bk=bk, w=w, mu = mu):
     j=0
     while j<N:
@@ -267,3 +359,10 @@ algoritme(YK,2,gradient)
 Y0 = y0()[2]
 algoritme(Y0,5,gradient)
 >>>>>>> 580d94d5aedb125959068fb0e7225764c41eca66
+=======
+# Må ha funk som kan plotte Y_K, det siste bildet etter alle lagene. Slik det er satt opp,
+# er de første I/2 bildene False, og de siste I/2 bildene er True
+
+# 3)
+# Hva bruker vi big_J for? Er den testet og er den rett?
+>>>>>>> e17bf3dc4a0a04a7051cba1b6e8cb41030cc8ad8
