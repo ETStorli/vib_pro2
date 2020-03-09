@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 
 
 def plot_progression(Y, C):
+    plt.figure()
     '''
     This function should make K+1 plots showing how, as the network progresses through its layers,
     the datapoints are drawn apart in such a way that they can be separated by a straight line.
@@ -16,7 +17,7 @@ def plot_progression(Y, C):
     C: An I-by-1 matrix of the labels corresponding to the datra points in Y.
     '''
     for k in range(Y.shape[0]):
-        show_dots(Y[k,:,:],C.flatten())
+        show_dots(Y[k, :, :], C.flatten())
         plt.show()
 
 
