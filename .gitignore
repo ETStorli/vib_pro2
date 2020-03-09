@@ -1,0 +1,11 @@
+venv/
+.DS_Store
+*.pdf
+*.ipynb
+.vscode
+.pytest_cache/
+testgit.py
+__pycache__/
+testgit.py
+
+
