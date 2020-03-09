@@ -11,7 +11,7 @@ def plot_progression(Y, C):
     '''
     This function should make K+1 plots showing how, as the network progresses through its layers,
     the datapoints are drawn apart in such a way that they can be separated by a straight line.
-    
+
     Y: A K+1-by-I-by-2 matrix of the values for each data point in the training set in each layer.
     C: An I-by-1 matrix of the labels corresponding to the datra points in Y.
     '''
@@ -24,10 +24,10 @@ def plot_model(forward_function, Ys, C, n):
     '''
     Make a map that shows what part of the 2d plane is classified as belonging to which spiral arm.
     Also plot the training data in Ys, C.
-    
+
     forward_function: A function that takes one argument, an S-by-2 matrix of S datapoints, and
         returns a vector of S classification values.
-        
+
         Hint: This function will use the weights you have found, so you might want it to be a method on a
         class called something like Network or Model.
     Ys: An I-by-2 matrix. Corresponding to Y[0,:,:]
@@ -46,11 +46,11 @@ def plot_model(forward_function, Ys, C, n):
 def plot_separation(last_function, Ys, C, n):
     '''
     Show how the training data is represented in the last layer. Also maps the rest of the possible points in the plane.
-    
+
     last_function: A function that takes one argument, and S-by-2 matrix of S intermediate states in
         the network, and retruns a vector of S classification values.
         It should multiply by w, add μ and evaluate 𝜂.
-        
+
         Hint: This function will use the weights you have found, so you might want it to be a method on a
         class called something like Network or Model.
     Ys:An I-by-2 matrix. Corresponding to Y[-1,:,:].
@@ -107,7 +107,7 @@ def get_box(Ys):
     ymax += 0.2*ydelta
     return xmin, xmax, ymin, ymax
 
-    
+
 def get_grid(xcoordinates, ycoordinates):
     xv, yv = np.meshgrid(xcoordinates, ycoordinates)
     xs = xv.reshape(-1)
