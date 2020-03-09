@@ -14,11 +14,11 @@ d = 2  # Antall piksel-elementer til hvert bilde. Hvert bilde er stablet opp i e
 I = 200  # Antall bilder
 h = 0.1  # Skrittlengde i transformasjonene
 Wk = rng(K, d, d)
-w1 = rng(d)
-mu1 = rng(1)
+w = rng(d)
+mu = rng(1)
 one = np.ones(I)
 bk = rng(d, K)
-U0 = np.array ((Wk, bk, w1, mu1))
+U0 = np.array ((Wk, bk, w, mu))
 y0, C1 = sp.get_data_spiral_2d(I)
 C = np.reshape(C1, I)
 N=1000
@@ -36,11 +36,12 @@ def sigma(x): return np.tanh(x)
 def d_sigma(x): return 1 - (np.tanh(x))**2
 
 
-def Z(x, w, mu): return eta(np.transpose(x) @ w + mu * np.ones(len(x[0])))  # x = siste Y_K
+def Z(x, w, mu): return eta(np.transpose(x) @ w + mu * np.ones(I))  # x = siste Y_K
 
 
 
-def YK(y0, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk):
+
+def YK(y0, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk, I=I):
     Y_out = np.random.rand(K, d, I)
     Y = y0
     Y_out[0] = y0
@@ -56,20 +57,20 @@ def YK(y0, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk):
 
 ###############################
 
-def gradient(wk, bk, w, mu, y, c):
-    j_mu = d_eta(np.transpose(np.transpose(y[-1])@ w + mu * one)) @ (Z(y[-1], w, mu) - c)
-    j_omega = y[-1] @ ((Z(y[-1], w, mu) - c) * d_eta(np.transpose(np.transpose(y[-1])@ w + mu * one)))
-    p_k = np.outer(w, (np.transpose((Z(y[-1], w, mu) - c) * d_eta(np.transpose(np.transpose(y[-1])@ w + mu * one)))))
+def gradient(wk, bk, w, mu, y, c, I=I):
+    j_mu = d_eta(np.transpose(np.transpose(y[-1])@ w)) #+ mu * np.ones(I))) @ (Z(y[-1], w, mu) - c)
+    j_omega = y[-1] @ ((Z(y[-1], w, mu) - c) * d_eta(np.transpose(np.transpose(y[-1])@ w + mu * np.ones(I))))
+    p_k = np.outer(w, (np.transpose((Z(y[-1], w, mu) - c) * d_eta(np.transpose(np.transpose(y[-1])@ w + mu * np.ones(I))))))
     arr_Pk = np.array([p_k])
     for i in range(1, K):
         p_k_min = np.array([np.array(arr_Pk[-i] + h * np.transpose(wk[-i-1]) @ (d_sigma(wk[-i-1]@y[-i-1] + np.transpose(np.array([bk[:, -i-1]]*I))) * arr_Pk[-i]))])
         arr_Pk = np.vstack((p_k_min, arr_Pk))
     j_wk = np.array([h*(arr_Pk[1] * (d_sigma(wk[0] @ y[0] + np.transpose(np.array([bk[:, 0]]*I))))) @ np.transpose(y[0])])
-    j_bk = np.array(h*(arr_Pk[1] * (d_sigma(wk[0] @ y[0] + np.transpose(np.array([bk[:, 0]]*I))))) @ one)
+    j_bk = np.array(h*(arr_Pk[1] * (d_sigma(wk[0] @ y[0] + np.transpose(np.array([bk[:, 0]]*I))))) @ np.ones(I))
     for j in range(1, K-1):
         j_wk_plus = np.array([h*(arr_Pk[j+1] * (d_sigma(wk[j] @ y[j] + np.transpose(np.array([bk[:, j]]*I))))) @ np.transpose(y[j])])
         j_wk = np.vstack((j_wk, j_wk_plus))
-        j_bk_plus = np.array(h*(arr_Pk[j+1] * (d_sigma(wk[j] @ y[j] + np.transpose(np.array([bk[:, j]]*I))))) @ one)
+        j_bk_plus = np.array(h*(arr_Pk[j+1] * (d_sigma(wk[j] @ y[j] + np.transpose(np.array([bk[:, j]]*I))))) @ np.ones(I))
         j_bk = np.vstack((j_bk, j_bk_plus))
 
     return j_wk, j_bk, j_omega, j_mu
@@ -85,7 +86,7 @@ def optimering(grad_U, U_j):  # Returnerer de oppdaterte parameterene for neste 
     U_j[3] = U_j[3] - tau * grad_U[3]
     return U_j
 
-def algoritme(N, grad, y0, w=w1, mu=mu1, C=C, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk, C1 = C1):
+def algoritme(N, grad, y0, w=w, mu=mu, C=C, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk, C1 = C1):
     j = 0
     while j < N:
         C, Y0 = C, y0
@@ -97,6 +98,17 @@ def algoritme(N, grad, y0, w=w1, mu=mu1, C=C, K=K, sigma=sigma, h=h, Wk=Wk, bk=b
     arr_z = Z(Yk[-1], w, mu)
     return Yk, Wk, bk, w, mu, arr_z
 
+def algoritme_test(N, grad, y0, w=w, mu=mu, C=C, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk, C1 = C1):
+    j = 0
+    while j < N:
+        C, Y0 = C, y0
+        Yk = YK(Y0, K, sigma, h, Wk, bk, len(y0[0]))  # Array med K Yk matriser, kjører bildene igjennom alle lagene ved funk. YK
+        d_Wk, d_bk, d_w, d_mu = grad(Wk, bk, w, mu, Yk, C, len(y0[0]))  # Regner ut gradieinten for parametrene våre
+        Wk, bk, w, mu = optimering([d_Wk, d_bk, d_w, d_mu], [Wk, bk, w, mu])  # Oppdaterer parametrene vhp. u_j
+        #print("wk, ", Wk,"bk: ", bk, "w: ", w, "my, ",  mu)
+        j += 1
+    arr_z = Z(Yk[-1], w, mu)
+    return Yk, Wk, bk, w, mu, arr_z
 
 def split_YK(Y_k):
     x_false_true = np.split (Y_k[0], 2)
@@ -123,13 +135,13 @@ Yk_matrix, Wk, bk, w, mu, arr_z = algoritme(1000,gradient,y0)
 
 
 def forward_function(x,w=w,mu=mu):
-    return algoritme(2,gradient,x,w,mu)[0]
+    return algoritme_test(2,gradient,x,w,mu)[0]
 
 def last_function(x, w=w, mu=mu):
-    return eta(np.transpose(x) @ w + mu * np.ones(len(x[0])))  # x = siste Y_K)
+    return eta(np.transpose(x) @ w + mu * np.ones(40000))  # x = siste Y_K)
 
 
-#plot_model(forward_function,Yk_matrix[0,:,:],C1,I)
+#plot_model(forward_function,Yk_matrix[0,:,:],C1,I)          #FIXME: denne er feil
 plot_separation(last_function,Yk_matrix[-1,:,:],C1,I)
 
 
