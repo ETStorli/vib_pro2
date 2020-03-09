@@ -21,7 +21,6 @@ bk = rng(d, K)
 U0 = np.array ((Wk, bk, w, mu))
 y0, C1 = sp.get_data_spiral_2d(I)
 C = np.reshape(C1, I)
-N=1000
 
 # Med matrise som argument virker funksjonene på hvert element i matrisen
 def eta(x): return 1 / 2 * (1 + np.tanh(x / 2))
@@ -36,12 +35,10 @@ def sigma(x): return np.tanh(x)
 def d_sigma(x): return 1 - (np.tanh(x))**2
 
 
-def Z(x, w, mu): return eta(np.transpose(x) @ w + mu * np.ones(I))  # x = siste Y_K
+def Z(x, w, mu): return eta(np.transpose(x) @ w + mu * one)  # x = siste Y_K
 
 
-
-
-def YK(y0, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk, I=I):
+def YK(y0, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk):
     Y_out = np.random.rand(K, d, I)
     Y = y0
     Y_out[0] = y0
@@ -57,36 +54,36 @@ def YK(y0, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk, I=I):
 
 ###############################
 
-def gradient(wk, bk, w, mu, y, c, I=I):
-    j_mu = d_eta(np.transpose(np.transpose(y[-1])@ w)) #+ mu * np.ones(I))) @ (Z(y[-1], w, mu) - c)
-    j_omega = y[-1] @ ((Z(y[-1], w, mu) - c) * d_eta(np.transpose(np.transpose(y[-1])@ w + mu * np.ones(I))))
-    p_k = np.outer(w, (np.transpose((Z(y[-1], w, mu) - c) * d_eta(np.transpose(np.transpose(y[-1])@ w + mu * np.ones(I))))))
+def gradient(wk, bk, w, mu, y, c):
+    j_mu = d_eta(np.transpose(np.transpose(y[-1])@ w + mu * one)) @ (Z(y[-1], w, mu) - c)
+    j_w = y[-1] @ ((Z(y[-1], w, mu) - c) * d_eta(np.transpose(np.transpose(y[-1])@ w + mu * one)))
+    p_k = np.outer(w, (np.transpose((Z(y[-1], w, mu) - c) * d_eta(np.transpose(np.transpose(y[-1])@ w + mu * one)))))
     arr_Pk = np.array([p_k])
     for i in range(1, K):
         p_k_min = np.array([np.array(arr_Pk[-i] + h * np.transpose(wk[-i-1]) @ (d_sigma(wk[-i-1]@y[-i-1] + np.transpose(np.array([bk[:, -i-1]]*I))) * arr_Pk[-i]))])
         arr_Pk = np.vstack((p_k_min, arr_Pk))
     j_wk = np.array([h*(arr_Pk[1] * (d_sigma(wk[0] @ y[0] + np.transpose(np.array([bk[:, 0]]*I))))) @ np.transpose(y[0])])
-    j_bk = np.array(h*(arr_Pk[1] * (d_sigma(wk[0] @ y[0] + np.transpose(np.array([bk[:, 0]]*I))))) @ np.ones(I))
+    j_bk = np.array(h*(arr_Pk[1] * (d_sigma(wk[0] @ y[0] + np.transpose(np.array([bk[:, 0]]*I))))) @ one)
     for j in range(1, K-1):
         j_wk_plus = np.array([h*(arr_Pk[j+1] * (d_sigma(wk[j] @ y[j] + np.transpose(np.array([bk[:, j]]*I))))) @ np.transpose(y[j])])
         j_wk = np.vstack((j_wk, j_wk_plus))
-        j_bk_plus = np.array(h*(arr_Pk[j+1] * (d_sigma(wk[j] @ y[j] + np.transpose(np.array([bk[:, j]]*I))))) @ np.ones(I))
+        j_bk_plus = np.array(h*(arr_Pk[j+1] * (d_sigma(wk[j] @ y[j] + np.transpose(np.array([bk[:, j]]*I))))) @ one)
         j_bk = np.vstack((j_bk, j_bk_plus))
 
-    return j_wk, j_bk, j_omega, j_mu
+    return j_wk, j_bk, j_w, j_mu
 
 ####################
 
 def optimering(grad_U, U_j):  # Returnerer de oppdaterte parameterene for neste iterasjon
-    tau = .04
+    tau = [.1, .01]
     for i in range (K - 1):
-        U_j[0][i] = U_j[0][i] - tau * grad_U[0][i]
-        U_j[1][:, i] = U_j[1][:, i] - tau * grad_U[1][i]
-    U_j[2] = U_j[2] - tau * grad_U[2]
-    U_j[3] = U_j[3] - tau * grad_U[3]
+        U_j[0][i] = U_j[0][i] - tau[0] * grad_U[0][i]
+        U_j[1][:, i] = U_j[1][:, i] - tau[0] * grad_U[1][i]
+    U_j[2] = U_j[2] - tau[0] * grad_U[2]
+    U_j[3] = U_j[3] - tau[0] * grad_U[3]
     return U_j
 
-def algoritme(N, grad, y0, w=w, mu=mu, C=C, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk, C1 = C1):
+def algoritme(N, grad, y0=y0, C=C, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk, w=w, mu=mu, C1 = C1):
     j = 0
     while j < N:
         C, Y0 = C, y0
@@ -98,17 +95,8 @@ def algoritme(N, grad, y0, w=w, mu=mu, C=C, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk,
     arr_z = Z(Yk[-1], w, mu)
     return Yk, Wk, bk, w, mu, arr_z
 
-def algoritme_test(N, grad, y0, w=w, mu=mu, C=C, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk, C1 = C1):
-    j = 0
-    while j < N:
-        C, Y0 = C, y0
-        Yk = YK(Y0, K, sigma, h, Wk, bk, len(y0[0]))  # Array med K Yk matriser, kjører bildene igjennom alle lagene ved funk. YK
-        d_Wk, d_bk, d_w, d_mu = grad(Wk, bk, w, mu, Yk, C, len(y0[0]))  # Regner ut gradieinten for parametrene våre
-        Wk, bk, w, mu = optimering([d_Wk, d_bk, d_w, d_mu], [Wk, bk, w, mu])  # Oppdaterer parametrene vhp. u_j
-        #print("wk, ", Wk,"bk: ", bk, "w: ", w, "my, ",  mu)
-        j += 1
-    arr_z = Z(Yk[-1], w, mu)
-    return Yk, Wk, bk, w, mu, arr_z
+def foreward_function(N):
+    return algoritme(N, grad=gradient, y0 = y0, C=C, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk, w=w, mu=mu, C1=C1)
 
 def split_YK(Y_k):
     x_false_true = np.split (Y_k[0], 2)
@@ -118,11 +106,7 @@ def split_YK(Y_k):
 
     return Y_false, Y_true
 
-
-
-
-
-#Y_K, Wk, bk, w, mu = algoritme(40000, gradient, y0, C, K, sigma, h, Wk, bk, w, mu)
+Y_K, Wk, bk, w, mu, arr_z = algoritme(1000, gradient, y0, C, K, sigma, h, Wk, bk, w, mu)
 
 def mkarray(Y_K, Wk, bk, w, mu, name): # 4  multi process
     np.save('data/'+name+'.npy', [Y_K, Wk, bk, w, mu])
@@ -131,29 +115,14 @@ def loader(name):
     x = np.load ('data/'+name+'.npy', allow_pickle=True)
     return x
 
-Yk_matrix, Wk, bk, w, mu, arr_z = algoritme(1000,gradient,y0)
-
-
-def forward_function(x,w=w,mu=mu):
-    return algoritme_test(2,gradient,x,w,mu)[0]
 
 def last_function(x, w=w, mu=mu):
     return eta(np.transpose(x) @ w + mu * np.ones(40000))  # x = siste Y_K)
 
-
-#plot_model(forward_function,Yk_matrix[0,:,:],C1,I)          #FIXME: denne er feil
-plot_separation(last_function,Yk_matrix[-1,:,:],C1,I)
-
-
-
-#plot_separation(last_function1,Yk_matrix[0,:,:],C1,I)
-
-
-#x = loader("40k_iterasjoner_blårød")
 #mkarray(Y_K, Wk, bk, w, mu, "40k_iterasoner_blårød")
 
-#plot_progression(Y_K, np.transpose(C1))
-
+plot_progression(Y_K, np.transpose(C1))
+plot_separation(last_function,Y_K[-1,:,:],C1,I)
 #plot_model(foreward_function, Y_K[0], np.transpose(C1), 200)
 #plot_separation( , Y_K[-1], np.transpose(C1), 200)
 
