@@ -2,7 +2,7 @@ import math
 import numpy as np
 
     
-def get_data_spiral_2d(n_samples=10):
+def get_data_spiral_2d(n_samples=200):
     '''Create "observations" for training.
     
     Creates n_samples dots on two intertwined spirals.
@@ -37,7 +37,7 @@ def get_data_spiral_2d(n_samples=10):
     features = features[:, indexes]
     labels = labels[indexes]
 
-
+    
     return features, labels
 
 

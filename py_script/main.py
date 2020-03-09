@@ -33,12 +33,17 @@ def sigma(x): return np.tanh(x)
 
 
 def d_sigma(x): return 1 - (np.tanh(x))**2
-
-
 def Z(x, omega, mu): return eta(np.transpose(x) @ omega + mu * one)  # x = siste Y_K
 
 
-def YK(y0, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk):
+
+def big_j(Z, c):            #Fungerer for numpy arrays
+    c = -1*c
+    big_j = 0.5*la.norm(np.add(Z, c))**2
+    return big_j
+
+#Må returnere en tredimensjonal matrise, hvor den første dimensjonen svarer til iterasjon nr. k, og de to neste svarer til matrisen med bildet til det gitte laget k
+def YK(y0, K = K, sigma = sigma, h = h, Wk = Wk, bk = bk):
     Y_out = np.random.rand(K, d, I)
     Y = y0
     Y_out[0] = y0
