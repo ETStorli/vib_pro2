@@ -1,17 +1,16 @@
-import matplotlib.pyplot as plt
 import numpy as np
-import numpy.linalg as la
-import scipy as sp
 import loader as ld
 import spirals as sp
 from plotting import plot_progression, plot_model, plot_separation
-import random as rn
+
 
 rng = np.random.randn
 
+ld.get_dataset(3,6)
+
 K = 15  # Antall lag
-d = 2  # Antall piksel-elementer til hvert bilde. Hvert bilde er stablet opp i en vektor av lengde d
-I = 200  # Antall bilder
+d = 784  # Antall piksel-elementer til hvert bilde. Hvert bilde er stablet opp i en vektor av lengde d
+I = 1000  # Antall bilder
 h = 0.1  # Skrittlengde i transformasjonene
 Wk = rng(K, d, d)
 w = rng(d)
@@ -22,21 +21,15 @@ U0 = np.array ((Wk, bk, w, mu))
 y0, C1 = sp.get_data_spiral_2d(I)
 C = np.reshape(C1, I)
 
+######
 # Med matrise som argument virker funksjonene på hvert element i matrisen
 def eta(x): return 1 / 2 * (1 + np.tanh(x / 2))
-
-
 def d_eta(x): return (1-(np.tanh(x/2))**2)/4
-
-
 def sigma(x): return np.tanh(x)
-
-
 def d_sigma(x): return 1 - (np.tanh(x))**2
-
-
 def Z(x, omega, mu): return eta(np.transpose(x) @ omega + mu * one)  # x = siste Y_K
 
+#####
 
 def YK(y0, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk):
     Y_out = np.random.rand(K, d, I)
