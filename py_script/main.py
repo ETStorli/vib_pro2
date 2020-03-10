@@ -9,9 +9,12 @@ import random as rn
 
 rng = np.random.randn
 
+images, label = ld.get_dataset("training", 3, 6, "../mnist")
+images = images/255
+
 K = 15  # Antall lag
-d = 2  # Antall piksel-elementer til hvert bilde. Hvert bilde er stablet opp i en vektor av lengde d
-I = 200  # Antall bilder
+d = 784  # Antall piksel-elementer til hvert bilde. Hvert bilde er stablet opp i en vektor av lengde d
+I = 70  # Antall bilder
 h = 0.1  # Skrittlengde i transformasjonene
 Wk = rng(K, d, d)
 w = rng(d)
@@ -24,24 +27,19 @@ C = np.reshape(C1, I)
 
 # Med matrise som argument virker funksjonene på hvert element i matrisen
 def eta(x): return 1 / 2 * (1 + np.tanh(x / 2))
-
-
 def d_eta(x): return (1-(np.tanh(x/2))**2)/4
-
-
 def sigma(x): return np.tanh(x)
-
-
 def d_sigma(x): return 1 - (np.tanh(x))**2
 def Z(x, omega, mu): return eta(np.transpose(x) @ omega + mu * one)  # x = siste Y_K
 
 
-
+def big_j(z, c): return 0.5*(la.norm(z-c))**2
+"""
 def big_j(Z, c):            #Fungerer for numpy arrays
     c = -1*c
     big_j = 0.5*la.norm(np.add(Z, c))**2
     return big_j
-
+"""
 #Må returnere en tredimensjonal matrise, hvor den første dimensjonen svarer til iterasjon nr. k, og de to neste svarer til matrisen med bildet til det gitte laget k
 def YK(y0, K = K, sigma = sigma, h = h, Wk = Wk, bk = bk):
     Y_out = np.random.rand(K, d, I)
@@ -59,7 +57,7 @@ def YK(y0, K = K, sigma = sigma, h = h, Wk = Wk, bk = bk):
 
 ###################
 
-def alt_gradient(wk, bk, w, mu, y, c):
+def alt_gradient(wk, bk, w, mu, y, c, K):
     j_mu = d_eta(np.transpose(np.transpose(y[-1])@ w + mu * one)) @ (Z(y[-1], w, mu) - c)
     j_omega = y[-1] @ ((Z(y[-1], w, mu) - c) * d_eta(np.transpose(np.transpose(y[-1])@ w + mu * one)))
     p_k = np.outer(w, (np.transpose((Z(y[-1], w, mu) - c) * d_eta(np.transpose(np.transpose(y[-1])@ w + mu * one)))))
@@ -79,8 +77,8 @@ def alt_gradient(wk, bk, w, mu, y, c):
 
 ####################
 
-def optimering(grad_U, U_j):  # Returnerer de oppdaterte parameterene for neste iterasjon
-    tau = [.1, .01]
+def optimering(grad_U, U_j, K):  # Returnerer de oppdaterte parameterene for neste iterasjon
+    tau = [.05, .01]
     for i in range (K - 1):
         U_j[0][i] = U_j[0][i] - tau[0] * grad_U[0][i]
         U_j[1][:, i] = U_j[1][:, i] - tau[0] * grad_U[1][i]
@@ -90,7 +88,7 @@ def optimering(grad_U, U_j):  # Returnerer de oppdaterte parameterene for neste 
 
 #Her er gradient _J_U listen med J derivert på div element. U_j inneholder [W_K, B_k, w, my]
 
-def adam_decent(gradient_J_U, U_j, j):              #her må man ta inn j som teller iterasjonstallet
+def adam_decent(gradient_J_U, U_j, j, K):              #her må man ta inn j som teller iterasjonstallet
     beta_1 = 0.9
     beta_2 = 0.999
     alpha = 0.01
@@ -129,31 +127,74 @@ def algoritme(N, grad, y0=y0, C=C, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk, w=w, mu=
     return Yk, Wk, bk, w, mu, arr_z
 
 
-def adams_algoritme(N, grad, y0=y0, C=C, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk, w=w, mu=mu, C1 = C1):
+def adams_algoritme(N, grad, y0, K, C, h, Wk, bk, w, mu, sigma=sigma):
     j = 0
     arr_z = np.array (Z(y0, w, mu))
+    arr_j = np.random.rand(N)
     while j < N:
-
-        j += 1
         C, Y0 = C, y0
         Yk = YK(Y0, K, sigma, h, Wk, bk)  # Array med K Yk matriser, kjører bildene igjennom alle lagene ved funk. YK
-        d_Wk, d_bk, d_w, d_mu = grad(Wk, bk, w, mu, Yk, C)  # Regner ut gradieinten for parametrene våre
-        Wk, bk, w, mu = adam_decent([d_Wk, d_bk, d_w, d_mu], [Wk, bk, w, mu], j)  # Oppdaterer parametrene vhp. u_j
+        d_Wk, d_bk, d_w, d_mu = grad(Wk, bk, w, mu, Yk, C, K)  # Regner ut gradieinten for parametrene våre
+
+        z = Z(Yk[-1], w, mu)
+        arr_j[j] = big_j (z, C)
+        j += 1
+
+        Wk, bk, w, mu = adam_decent([d_Wk, d_bk, d_w, d_mu], [Wk, bk, w, mu], j, K)  # Oppdaterer parametrene vhp. u_j
         np.append(arr_z, Z(Yk[-1], w, mu))
 
-    return Yk, Wk, bk, w, mu, arr_z
+        print(j,"faaaaaaak",len(arr_j))
+        if (j % 10) == 0:
+            print(j)
 
+    return Yk, Wk, bk, w, mu, arr_z, arr_j
 
 ##########
 
-def foreward_function(N):
-    #algoritme (N, grad=alt_gradient, y0=y0, C=C, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk, w=w, mu=mu, C1=C1)
-    return sum(Z(x[0][-1], w, mu))/200
+
+#Det er omtrent 12000 bilder av treningsutvalget som har siffrene vi ønsker å trene etter.
+#her bestemmer
+def numb_req(N, grad, K, images, labels, ant_sett, ant_i_sett=I):
+    Wk = rng (K, d, d)
+    w = rng (d)
+    mu = rng (1)
+    bk = rng (d, K)
+
+    #Generer rand. tall mellom (0, 12000-ant_i_sett*ant_sett
+    rand_tall = np.random.randint(0, len(images[1])-(ant_sett*ant_i_sett))
+    arr_big_j = np.random.rand(ant_sett, N)
+    for i in range(ant_sett):
+        print("starter et sett")
+        Yk = np.random.rand(d, ant_i_sett)        # dette er y0 for hver iterasjon
+        korr_tall = np.random.rand(ant_i_sett)
+        for j in range(1, rand_tall+ ant_i_sett*i, rand_tall+ant_i_sett + ant_i_sett*i-1):
+            Yk[:, j % rand_tall-1] = images[:, j-1]   # fyller inn bilder for valgt intervall
+            korr_tall[j % rand_tall - 1] = labels[j]
+        print("bildeutvalg funnet")
+        Yk, Wk, bk, w, mu, arr_z, arr_j = adams_algoritme(N, grad, Yk, K, korr_tall, 0.1, Wk, bk, w, mu)
+        arr_big_j[i] = arr_j
+        print(i)
+
+    return Yk, Wk, bk, w, mu, arr_z, arr_big_j
+
+
+Yk, Wk, bk, w, mu, arr_z, arr_big_j = numb_req(20, alt_gradient, 10, images, label, 2)
+
+print(arr_big_j)
+x = np.linspace(1, 20, 20)
+
+plt.figure()
+plt.plot(x, arr_big_j[0], '.')
+plt.plot(x, arr_big_j[1], '.')
+plt.show()
+
+
+
 
 ########
 
 def lagre_array(Y_K, Wk, bk, w, mu, name): # lagrer alle verdiene fra læringsprosessen
-    np.save('data/'+name+'.npy', [Y_K, Wk, bk, w, mu])
+    np.savez('data/'+name+'.npy', [Y_K, Wk, bk, w, mu])
 
 def loader(name):
     x = np.load (name+'.npy', allow_pickle=True)
@@ -163,14 +204,15 @@ def loader(name):
 
 
 
+
 #Y_K, Wk, bk, w, mu = algoritme(40000, gradient, y0, C, K, sigma, h, Wk, bk, w, mu)
-Y_K, Wk, bk, w, mu, arr_z = adams_algoritme(30000, alt_gradient, y0, C, K, sigma, h, Wk, bk, w, mu)
+#Y_K, Wk, bk, w, mu, arr_z = adams_algoritme(30000, alt_gradient, y0, C, K, sigma, h, Wk, bk, w, mu)
 
 #lagre_array(Y_K, Wk, bk, w, mu, "40k_iterasoner_blårød")
 # = loader("br_40k")
 
 
 
-plot_progression(Y_K, np.transpose(C1))
+#plot_progression(Y_K, np.transpose(C1))
 #plot_model(foreward_function, x[0][0], np.transpose(C1), 1)
 #plot_separation( , Y_K[-1], np.transpose(C1), 200)
