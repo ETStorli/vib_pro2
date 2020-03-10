@@ -2,10 +2,10 @@ venv/
 .DS_Store
 *.pdf
 *.ipynb
+!rapport_project2.ipynb
 .vscode
 .pytest_cache/
 testgit.py
 __pycache__/
 testgit.py
-
-
+*esting.py

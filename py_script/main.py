@@ -203,16 +203,21 @@ def loader(name):
 ###########
 
 
+def forward_function(x, I=I):       # Kjører gjennom algoritmen EN gang med riktig
+    N = 1                      # tilpasning for plottefunksjonen
+    I **=2
+    _, C1 = sp.get_data_spiral_2d(I)
+    C = np.reshape(C1, I)
+    print("C: ",np.shape(C))
+    return algoritme(N, grad=gradient, y0 = x, C=C, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk, w=w, mu=mu, C1=C1, I=I)[5]
+
+def last_function(x, w=w, mu=mu,I=I):
+    return eta(np.transpose(x) @ w + mu * np.ones(I**2))  # x = siste Y_K)
 
 
-#Y_K, Wk, bk, w, mu = algoritme(40000, gradient, y0, C, K, sigma, h, Wk, bk, w, mu)
-#Y_K, Wk, bk, w, mu, arr_z = adams_algoritme(30000, alt_gradient, y0, C, K, sigma, h, Wk, bk, w, mu)
 
-#lagre_array(Y_K, Wk, bk, w, mu, "40k_iterasoner_blårød")
-# = loader("br_40k")
-
-
-
-#plot_progression(Y_K, np.transpose(C1))
-#plot_model(foreward_function, x[0][0], np.transpose(C1), 1)
-#plot_separation( , Y_K[-1], np.transpose(C1), 200)
+#Fungerer best for mange iterasjoner:
+Y_K, Wk, bk, w, mu, arr_z = algoritme(60000, gradient, y0, C, K, sigma, h, Wk, bk, w, mu)
+plot_progression(Y_K, np.transpose(C1))
+plot_model(forward_function, y0, np.transpose(C1), I)
+plot_separation(last_function,Y_K[-1,:,:],C1,I)
