@@ -16,9 +16,13 @@ def plot_progression(Y, C):
     Y: A K+1-by-I-by-2 matrix of the values for each data point in the training set in each layer.
     C: An I-by-1 matrix of the labels corresponding to the datra points in Y.
     '''
+    plt.figure()
+    i = 0
     for k in range(Y.shape[0]):
+        plt.subfig(121 +i)
+        i+=1
         show_dots(Y[k, :, :], C.flatten())
-        plt.show()
+    plt.show()
 
 
 def plot_model(forward_function, Ys, C, n):
