@@ -11,7 +11,7 @@ rng = np.random.randn
 
 K = 15  # Antall lag
 d = 2  # Antall piksel-elementer til hvert bilde. Hvert bilde er stablet opp i en vektor av lengde d
-I = 200  # Antall bilder
+I = 1000  # Antall bilder
 h = 0.1  # Skrittlengde i transformasjonene
 Wk = rng(K, d, d)
 w = rng(d)
@@ -24,18 +24,11 @@ C = np.reshape(C1, I)
 
 # Med matrise som argument virker funksjonene på hvert element i matrisen
 def eta(x): return 1 / 2 * (1 + np.tanh(x / 2))
-
-
 def d_eta(x): return (1-(np.tanh(x/2))**2)/4
-
-
 def sigma(x): return np.tanh(x)
-
-
 def d_sigma(x): return 1 - (np.tanh(x))**2
-
-
 def Z(x, w, mu, I=I): return eta(np.transpose(x) @ w + mu * np.ones(I))  # x = siste Y_K
+def J(Z, c, yk, w, mu): return .5*(la.norm(Z(yk, w, mu) - c))**2
 
 
 def YK(y0, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk,I=I):
@@ -75,7 +68,7 @@ def gradient(wk, bk, w, mu, y, c, I=I):
 ####################
 
 def optimering(grad_U, U_j):  # Returnerer de oppdaterte parameterene for neste iterasjon
-    tau = [.04, .01]
+    tau = [.03, .01]
     for i in range (K - 1):
         U_j[0][i] = U_j[0][i] - tau[0] * grad_U[0][i]
         U_j[1][:, i] = U_j[1][:, i] - tau[0] * grad_U[1][i]
@@ -92,20 +85,11 @@ def algoritme(N, grad, y0=y0, C=C, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk, w=w, mu=
         Wk, bk, w, mu = optimering ([d_Wk, d_bk, d_w, d_mu], [Wk, bk, w, mu])  # Oppdaterer parametrene vhp. u_j
         #print("wk, ", Wk,"bk: ", bk, "w: ", w, "my, ",  mu)
         j += 1
-        print(j)
+        if j%100 == 0:
+            print(int(j/100))
     arr_z = Z(Yk[-1], w, mu, I)
     return Yk, Wk, bk, w, mu, arr_z
 
-
-def split_YK(Y_k):
-    x_false_true = np.split (Y_k[0], 2)
-    y_false_true = np.split (Y_K[1], 2)
-    Y_false = np.vstack ((x_false_true[0], y_false_true[0]))
-    Y_true = np.vstack ((x_false_true[1], y_false_true[1]))
-
-    return Y_false, Y_true
-
-Y_K, Wk, bk, w, mu, arr_z = algoritme(3000, gradient, y0, C, K, sigma, h, Wk, bk, w, mu)
 
 def mkarray(Y_K, Wk, bk, w, mu, name): # 4  multi process
     np.save('data/'+name+'.npy', [Y_K, Wk, bk, w, mu])
@@ -115,20 +99,21 @@ def loader(name):
     return x
 
 
-def forward_function(x):       # Kjører gjennom algoritmen EN gang med riktig
+def forward_function(x, I=I):       # Kjører gjennom algoritmen EN gang med riktig
     N = 1                      # tilpasning for plottefunksjonen
-    I = 40000
+    I **=2
     _, C1 = sp.get_data_spiral_2d(I)
     C = np.reshape(C1, I)
     print("C: ",np.shape(C))
     return algoritme(N, grad=gradient, y0 = x, C=C, K=K, sigma=sigma, h=h, Wk=Wk, bk=bk, w=w, mu=mu, C1=C1, I=I)[5]
 
-def last_function(x, w=w, mu=mu):
-    return eta(np.transpose(x) @ w + mu * np.ones(40000))  # x = siste Y_K)
+def last_function(x, w=w, mu=mu,I=I):
+    return eta(np.transpose(x) @ w + mu * np.ones(I**2))  # x = siste Y_K)
 
 
 
 #Fungerer best for mange iterasjoner:
-#plot_progression(Y_K, np.transpose(C1))
-#plot_model(forward_function, y0, np.transpose(C1), I)
-#plot_separation(last_function,Y_K[-1,:,:],C1,I)
+Y_K, Wk, bk, w, mu, arr_z = algoritme(60000, gradient, y0, C, K, sigma, h, Wk, bk, w, mu)
+plot_progression(Y_K, np.transpose(C1))
+plot_model(forward_function, y0, np.transpose(C1), I)
+plot_separation(last_function,Y_K[-1,:,:],C1,I)
